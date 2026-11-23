@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TrueApply
 
-## Getting Started
+> True jobs. True skills. True hiring.
 
-First, run the development server:
+TrueApply is a hiring platform that puts a trust layer between job seekers and recruiters. Candidates prove skills through short, role-specific challenges instead of resumes. Companies prove their roles are real instead of ghosting applicants. AI scores both sides and keeps the pipeline transparent.
+
+## Stack
+
+- Next.js 16 (App Router, Server Components, Server Actions)
+- TypeScript 5, Tailwind CSS v4, shadcn/ui (Radix), Motion
+- Drizzle ORM on Neon Postgres
+- Deployed on Vercel
+
+## Getting started
 
 ```bash
+cp .env.example .env     # fill in DATABASE_URL
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Script                | What it does                                    |
+| --------------------- | ----------------------------------------------- |
+| `npm run dev`         | Start the dev server                            |
+| `npm run build`       | Production build                                |
+| `npm run lint`        | ESLint                                          |
+| `npm run type-check`  | `tsc --noEmit`                                  |
+| `npm run format`      | Prettier over the repo                          |
+| `npm run verify`      | lint + type-check + build                       |
+| `npm run db:generate` | Generate SQL migrations from `src/db/schema.ts` |
+| `npm run db:push`     | Push the schema straight to the database        |
+| `npm run db:studio`   | Open Drizzle Studio                             |
 
-## Learn More
+## Project layout
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/           routes, layouts, metadata (robots, sitemap)
+│   ├── (auth)/        /login, /register
+│   ├── (seeker)/      /seeker/*
+│   └── (recruiter)/   /recruiter/*
+├── components/
+│   ├── ui/        shadcn primitives
+│   ├── layout/    header, footer, wordmark
+│   └── motion/    client-side animation wrappers
+├── features/      domain code grouped by feature (auth, jobs, challenges)
+├── db/            Drizzle schema and Neon client
+└── lib/           shared helpers and constants
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See `ROADMAP.md` for phases and requirements.
