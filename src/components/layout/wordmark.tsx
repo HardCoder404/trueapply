@@ -9,7 +9,7 @@ export function Wordmark({ className }: { className?: string }) {
       href="/"
       aria-label={`${siteConfig.name} home`}
       className={cn(
-        "inline-flex items-center gap-2.5 font-semibold tracking-tight",
+        "inline-flex items-center gap-2.5 py-2.5 font-semibold tracking-tight",
         className,
       )}
     >

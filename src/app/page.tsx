@@ -48,8 +48,8 @@ export default function HomePage() {
             aria-hidden
             className="pointer-events-none absolute inset-0 grid-paper [mask-image:radial-gradient(ellipse_at_top,black_30%,transparent_75%)]"
           />
-          <div className="relative mx-auto grid w-full max-w-6xl gap-14 px-5 pt-20 pb-16 sm:px-8 sm:pt-28 sm:pb-24 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:gap-10">
-            <div className="max-w-2xl">
+          <div className="relative mx-auto grid w-full max-w-6xl grid-cols-1 gap-14 px-5 pt-20 pb-16 sm:px-8 sm:pt-28 sm:pb-24 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:gap-10">
+            <div className="max-w-2xl min-w-0">
               <Reveal>
                 <p className="inline-flex items-center gap-2 font-mono text-xs tracking-wide text-muted-foreground uppercase">
                   <span className="relative flex size-1.5">
@@ -87,7 +87,7 @@ export default function HomePage() {
               </Reveal>
             </div>
 
-            <Reveal delay={0.3} className="lg:justify-self-end">
+            <Reveal delay={0.3} className="min-w-0 lg:justify-self-end">
               <Card className="w-full max-w-md gap-0 py-0 ring-foreground/15">
                 <CardContent className="space-y-5 p-5 sm:p-6">
                   <div className="flex items-start justify-between gap-4">

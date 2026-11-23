@@ -58,8 +58,11 @@ src/
 - Prettier ignores `*.md` so the roadmap/context docs are not reformatted.
 - Commits: repo's local git identity, plain messages, no AI attribution trailers.
 
-### Not verified
-- Browser screenshot at 320/375/768/1024/1440 (Chrome extension was not connected). Layout uses mobile-first classes and clamp() type, but eyeball it with `npm run dev` before Phase 1.
+### Visual verification (done 23 Nov, headless Chromium via Python Playwright)
+- Screenshotted `/` and `/register` at 320/375/768/1024/1440: zero horizontal overflow, zero console errors.
+- Fixed: hero grid column was forced wider than the viewport by nowrap `truncate` text in the sample card (needed `min-w-0` on grid children + `grid-cols-1`).
+- Header buttons are 44px tall on mobile (`h-11 md:h-9`), wordmark link padded to 44px.
+- Re-run anytime: the script pattern is in the session notes; Playwright lives under `/opt/homebrew/opt/python@3.14/bin/python3.14`.
 
 ---
 
