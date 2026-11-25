@@ -1,5 +1,8 @@
 import { SignIn } from "@clerk/nextjs";
 import type { Metadata } from "next";
+import { Suspense } from "react";
+
+import { PendingScreen } from "@/components/layout/pending-screen";
 
 export const metadata: Metadata = {
   title: "Sign in",
@@ -8,5 +11,9 @@ export const metadata: Metadata = {
 };
 
 export default function LoginPage() {
-  return <SignIn />;
+  return (
+    <Suspense fallback={<PendingScreen />}>
+      <SignIn />
+    </Suspense>
+  );
 }
