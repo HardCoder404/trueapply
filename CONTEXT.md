@@ -1,8 +1,8 @@
 # TrueApply — Session Context (Save Point)
 
 > Last updated: November 23, 2026
-> Phase: 1 — Authentication & User System → DONE & LIVE-TESTED 25 Nov 2026
-> Next: Phase 2 (job posting + public board + ghost-job detection)
+> Phase: 2 — Job Posting + Ghost Job Detection → DONE & LIVE-TESTED 25 Nov 2026
+> Next: Phase 3 — Skill Verification (challenge generator, sandbox, evaluator, skill portfolio)
 
 ---
 
@@ -13,6 +13,29 @@
 - **Tagline:** "True jobs. True skills. True hiring."
 - **Deploy URL:** trueapply.vercel.app (not deployed yet)
 - **Cost:** $0 MVP (all free tiers)
+
+---
+
+## Phase 2 — Built 25 Nov 2026 (jobs, public board, Reality Score)
+
+Verification: lint 0 · type-check 0 · build OK (19 routes) · live: recruiter posted + published a role (Groq scored it 73–74), board + filters + empty state, detail page with JSON-LD JobPosting, 404, no overflow at 375, cron 401 without secret / archives with it, sitemap lists open job slugs.
+
+### What exists
+- LLM: **Groq** via plain fetch in `src/lib/ai/groq.ts` (`completeJson` with zod schema, JSON mode, 20s timeout, model from `GROQ_MODEL` = `openai/gpt-oss-120b`, falls back to `openai/gpt-oss-20b` on 429/5xx). Key's available models: gpt-oss-120b/20b, qwen3.8-27b, allam-2-7b (no llama).
+- Schema: `jobs` gained `slug` (unique, `<slugified-title>-<6 chars of id>`), `reality_breakdown` jsonb (`RealitySignal[]`), `published_at`, score index. Migration `0001` applied to Neon.
+- `src/features/jobs/`: `schemas.ts` (zod job form + filters), `reality-score.ts` (signals: salary 20, verified domain 15, response rate 20 [10 when no history], hires 15, AI description specificity 20 with length heuristic fallback, deadline 10; thresholds verified ≥80 / likely-real ≥55), `queries.ts` (listOpenJobs with q/location/remote/min/skill/page, slug lookup, company jobs, companyHistory from applications), `actions.ts` (saveJob draft|publish, publishJob, closeJob; 10 posts/day/company limit; ownership checks), components (job-card, job-filters GET form, job-form client, reality-badge, reality-breakdown).
+- Routes: `/jobs` (public, filters via searchParams inside Suspense), `/jobs/[slug]` (generateMetadata + JSON-LD JobPosting, sticky score aside), `/recruiter/jobs`, `/recruiter/jobs/new`, `/recruiter/jobs/[id]` (publish/close/edit), `/recruiter/jobs/[id]/edit`, `GET /api/cron/expire-jobs` (Bearer `CRON_SECRET`; `vercel.json` cron daily 03:00). Sitemap is dynamic and includes open jobs.
+- Shared form bits moved to `src/components/forms/` (field, tag-input with `defaultTags`, choice-group). `AppHeader` takes `links`; recruiter nav Overview/Roles, seeker Overview/Jobs. Landing `SiteHeader` uses Clerk `<Show>` inside Suspense to swap Sign in/Get started for Dashboard + avatar.
+- Gotchas learned: any `new Date()` in a dynamic component must come after `await connection()` (next/server) or Next flags it; `db` must not be cached on `globalThis` in dev (stale schema after HMR) — it's module-level now.
+- Not done from the Phase 2 list: profile/company settings page (deferred), Upstash rate limiting (DB count used instead), nonce CSP.
+
+### Phase 3 — Next Steps
+1. Challenge generator: on publish (or on demand) call Groq to create 2–3 role-specific micro-challenges per job → `challenges` table (type from role, difficulty, time limit).
+2. Seeker challenge page `/jobs/[slug]/challenge`: timer, code/text editor (plain textarea + monospace first; Monaco later), submit → `submissions`.
+3. Evaluator: Groq grades correctness/quality/edge cases → score 0–100 + feedback → `submissions.score`, `skill_scores` per skill.
+4. Sandbox execution (Piston public API, free) for JS/TS/Python only in v1.
+5. Public skill portfolio `/u/[id]` with verified scores; replace "unverified" chips on seeker dashboard.
+6. Then Phase 4 wires `applications` (apply with score) and the transparency pipeline.
 
 ---
 
@@ -125,8 +148,8 @@ Next.js API routes + Server Actions instead of Turborepo + FastAPI. Deploys enti
 | Phase | What | Status |
 |---|---|---|
 | 0 | Foundation & Setup | DONE 23 Nov 2026 |
-| 1 | Auth & User System (Clerk) | CODE DONE 25 Nov 2026, live test pending keys |
-| 2 | Job Posting + Ghost Job Detection AI | Not started |
+| 1 | Auth & User System (Clerk) | DONE 25 Nov 2026 |
+| 2 | Job Posting + Ghost Job Detection AI | DONE 25 Nov 2026 (Groq) |
 | 3 | Skill Verification System | Not started |
 | 4 | Application Pipeline & Transparency | Not started |
 | 5 | AI Career Coach + RAG Pipeline | Not started |

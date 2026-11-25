@@ -15,9 +15,9 @@ import {
 } from "@/lib/constants";
 
 import { completeOnboarding, type OnboardingState } from "../actions";
-import { ChoiceGroup } from "./choice-group";
-import { Field } from "./field";
-import { TagInput } from "./tag-input";
+import { ChoiceGroup } from "@/components/forms/choice-group";
+import { Field } from "@/components/forms/field";
+import { TagInput } from "@/components/forms/tag-input";
 
 type OnboardingFormProps = {
   defaultName: string;

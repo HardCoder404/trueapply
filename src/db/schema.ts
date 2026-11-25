@@ -3,6 +3,7 @@ import {
   boolean,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   smallint,
@@ -94,10 +95,19 @@ export const companies = pgTable(
   ],
 );
 
+export type RealitySignal = {
+  key: string;
+  label: string;
+  points: number;
+  max: number;
+  detail: string;
+};
+
 export const jobs = pgTable(
   "jobs",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    slug: text("slug").notNull(),
     title: text("title").notNull(),
     description: text("description").notNull(),
     salaryMin: integer("salary_min").notNull(),
@@ -110,12 +120,16 @@ export const jobs = pgTable(
       .references(() => companies.id, { onDelete: "cascade" })
       .notNull(),
     realityScore: smallint("reality_score"),
+    realityBreakdown: jsonb("reality_breakdown").$type<RealitySignal[]>(),
     status: jobStatusEnum("status").default("draft").notNull(),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
     ...timestamps,
   },
   (table) => [
+    uniqueIndex("jobs_slug_idx").on(table.slug),
     index("jobs_company_id_idx").on(table.companyId),
     index("jobs_status_deadline_idx").on(table.status, table.deadline),
+    index("jobs_reality_score_idx").on(table.realityScore),
   ],
 );
 

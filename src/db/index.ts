@@ -5,17 +5,16 @@ import * as schema from "./schema";
 
 export type Database = NeonHttpDatabase<typeof schema>;
 
-const globalForDb = globalThis as typeof globalThis & { trueapplyDb?: Database };
+let db: Database | undefined;
 
 export function getDb(): Database {
-  if (globalForDb.trueapplyDb) return globalForDb.trueapplyDb;
+  if (db) return db;
 
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
     throw new Error("DATABASE_URL is not set. Copy .env.example to .env and fill it in.");
   }
 
-  const db = drizzle(neon(connectionString), { schema });
-  if (process.env.NODE_ENV !== "production") globalForDb.trueapplyDb = db;
+  db = drizzle(neon(connectionString), { schema });
   return db;
 }

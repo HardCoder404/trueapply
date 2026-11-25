@@ -1,8 +1,14 @@
 import { UserButton } from "@clerk/nextjs";
+import Link from "next/link";
 
 import { Wordmark } from "./wordmark";
 
-export function AppHeader({ area }: { area: string }) {
+type AppHeaderProps = {
+  area: string;
+  links?: Array<{ href: string; label: string }>;
+};
+
+export function AppHeader({ area, links = [] }: AppHeaderProps) {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-5 sm:px-8">
@@ -13,7 +19,20 @@ export function AppHeader({ area }: { area: string }) {
             {area}
           </span>
         </div>
-        <UserButton />
+        <div className="flex items-center gap-5">
+          <nav aria-label="Workspace" className="flex items-center gap-5">
+            {links.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+          <UserButton />
+        </div>
       </div>
     </header>
   );

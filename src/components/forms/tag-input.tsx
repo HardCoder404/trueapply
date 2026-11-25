@@ -11,6 +11,7 @@ type TagInputProps = {
   placeholder?: string;
   max?: number;
   describedBy?: string;
+  defaultTags?: string[];
 };
 
 export function TagInput({
@@ -19,8 +20,9 @@ export function TagInput({
   placeholder,
   max = 20,
   describedBy,
+  defaultTags = [],
 }: TagInputProps) {
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>(defaultTags);
   const [draft, setDraft] = useState("");
 
   function commit() {

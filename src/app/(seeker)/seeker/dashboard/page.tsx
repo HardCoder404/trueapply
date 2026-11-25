@@ -3,7 +3,10 @@ import { Suspense } from "react";
 
 import { DashboardSkeleton } from "@/components/layout/dashboard-skeleton";
 
+import Link from "next/link";
+
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ProfileCompletion } from "@/features/auth/components/profile-completion";
 import { seekerCompletion } from "@/features/auth/profile-completion";
 import { requireRole } from "@/features/auth/queries";
@@ -16,9 +19,9 @@ export const metadata: Metadata = {
 
 const upcoming = [
   {
-    phase: "02",
-    title: "Verified job board",
-    body: "Every listing with a Reality Score and a visible salary.",
+    phase: "05",
+    title: "Career coach",
+    body: "Data-backed answers on what to learn next, from real postings on the platform.",
   },
   {
     phase: "03",
@@ -50,6 +53,9 @@ async function SeekerDashboard() {
         {profile?.headline && (
           <p className="mt-2 text-muted-foreground">{profile.headline}</p>
         )}
+        <Button asChild className="mt-6 h-11 px-5 text-sm">
+          <Link href="/jobs">Browse open roles</Link>
+        </Button>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">

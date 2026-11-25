@@ -3,7 +3,10 @@ import { Suspense } from "react";
 
 import { DashboardSkeleton } from "@/components/layout/dashboard-skeleton";
 
+import Link from "next/link";
+
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ProfileCompletion } from "@/features/auth/components/profile-completion";
 import { recruiterCompletion } from "@/features/auth/profile-completion";
 import { requireRole } from "@/features/auth/queries";
@@ -15,9 +18,9 @@ export const metadata: Metadata = {
 
 const upcoming = [
   {
-    phase: "02",
-    title: "Post a role",
-    body: "Salary range required. Every posting gets a Reality Score before it goes live.",
+    phase: "03",
+    title: "Skill challenges",
+    body: "Each role gets AI-generated challenges so applicants arrive with proof, not claims.",
   },
   {
     phase: "04",
@@ -46,6 +49,14 @@ async function RecruiterDashboard() {
           {company?.name ?? account.name}
         </h1>
         <p className="mt-2 text-muted-foreground">Signed in as {account.name}</p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Button asChild className="h-11 px-5 text-sm">
+            <Link href="/recruiter/jobs/new">Post a role</Link>
+          </Button>
+          <Button asChild variant="outline" className="h-11 px-5 text-sm">
+            <Link href="/recruiter/jobs">Manage roles</Link>
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
