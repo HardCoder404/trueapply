@@ -44,6 +44,13 @@ const securityHeaders = [
   { key: "X-DNS-Prefetch-Control", value: "on" },
 ];
 
+const privateRouteHeaders = [
+  { key: "Cache-Control", value: "no-store, max-age=0" },
+  { key: "X-Robots-Tag", value: "noindex, nofollow" },
+];
+
+const privateRoutes = ["/dashboard", "/onboarding", "/seeker/:path*", "/recruiter/:path*"];
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
@@ -62,7 +69,10 @@ const nextConfig: NextConfig = {
     },
   },
   async headers() {
-    return [{ source: "/(.*)", headers: securityHeaders }];
+    return [
+      { source: "/(.*)", headers: securityHeaders },
+      ...privateRoutes.map((source) => ({ source, headers: privateRouteHeaders })),
+    ];
   },
 };
 

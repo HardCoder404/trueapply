@@ -38,6 +38,11 @@ Verification: lint 0 · type-check 0 · build OK (12 routes, auth routes partial
 - Test accounts (password is a comment at the bottom of `.env`): `seeker+clerk_test@example.com`, `hr+clerk_test@northwindlabs.com`.
 - Playwright lives at `/opt/homebrew/opt/python@3.14/bin/python3.14`; use `wait_until="domcontentloaded"` (dev server never reaches networkidle).
 - Clerk appearance: avatar forced grayscale so the default purple avatar does not break the monochrome theme.
+- `<html suppressHydrationWarning>`: a browser extension (Kantu/UI.Vision) injects `data-kantu` on <html> and caused a hydration console error. Not our bug.
+
+### Security posture after Phase 1 (keep extending each phase)
+- Done: CSP + HSTS + frame/MIME/referrer/permissions headers; `Cache-Control: no-store` + `X-Robots-Tag: noindex` on /dashboard, /onboarding, /seeker/*, /recruiter/* (verified: sign out → back button → /login, no stale dashboard); Clerk HttpOnly session cookies; Server Actions same-origin check (CSRF); zod validation on every action; parameterised queries via Drizzle; role checks server-side in every protected page; secrets only in `.env`.
+- Pending: rate limiting on actions/API (Upstash Redis, Phase 2 when jobs/apply land); nonce-based CSP to drop `'unsafe-inline'`; Clerk dashboard → Protect: keep bot protection on, enable compromised-password check + optional MFA (user's dashboard setting).
 
 ---
 
