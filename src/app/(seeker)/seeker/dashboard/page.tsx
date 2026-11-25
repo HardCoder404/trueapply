@@ -8,6 +8,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ProfileCompletion } from "@/features/auth/components/profile-completion";
 import { seekerCompletion } from "@/features/auth/profile-completion";
+import { StageBadge } from "@/features/applications/components/stage-badge";
+import { listSeekerApplications } from "@/features/applications/queries";
 import { SkillScoreList } from "@/features/challenges/components/skill-score-list";
 import { listUserSkillScores, listUserSubmissions } from "@/features/challenges/queries";
 import { requireRole } from "@/features/auth/queries";
@@ -30,9 +32,9 @@ const upcoming = [
     body: "Companies browse verified candidates and invite them to interview.",
   },
   {
-    phase: "04",
-    title: "Live applications",
-    body: "See exactly where each application sits, and how long it has sat there.",
+    phase: "07",
+    title: "Interview prep",
+    body: "Mock interviews built from the role, with feedback on every answer.",
   },
 ];
 
@@ -41,9 +43,10 @@ async function SeekerDashboard() {
   const profile = account.seekerProfile;
   const completion = seekerCompletion(profile);
   const firstName = account.name.split(" ")[0];
-  const [scores, recent] = await Promise.all([
+  const [scores, recent, applications] = await Promise.all([
     listUserSkillScores(account.id),
     listUserSubmissions(account.id, 5),
+    listSeekerApplications(account.id),
   ]);
 
   return (
@@ -99,6 +102,41 @@ async function SeekerDashboard() {
           </p>
         </section>
       </div>
+
+      {applications.length > 0 && (
+        <section aria-labelledby="applications-heading">
+          <div className="flex items-baseline justify-between gap-4">
+            <h2
+              id="applications-heading"
+              className="font-mono text-xs tracking-wide text-muted-foreground uppercase"
+            >
+              Applications
+            </h2>
+            <Link
+              href="/seeker/applications"
+              className="text-sm text-muted-foreground underline-offset-4 hover:underline"
+            >
+              Track all
+            </Link>
+          </div>
+          <ul className="mt-4 divide-y rounded-xl ring-1 ring-foreground/10">
+            {applications.slice(0, 4).map((application) => (
+              <li
+                key={application.id}
+                className="flex items-center justify-between gap-4 p-4"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{application.job.title}</p>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {application.job.company.name}
+                  </p>
+                </div>
+                <StageBadge stage={application.status} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {recent.length > 0 && (
         <section aria-labelledby="recent-heading">

@@ -8,13 +8,13 @@ import {
   gt,
   gte,
   ilike,
-  ne,
   or,
   sql,
 } from "drizzle-orm";
 
 import { getDb } from "@/db";
-import { applications, jobs } from "@/db/schema";
+import { jobs } from "@/db/schema";
+import { companyResponseStats } from "@/features/applications/queries";
 import { lakhsToInr } from "@/lib/format";
 
 import type { CompanyHistory } from "./reality-score";
@@ -99,19 +99,11 @@ export async function companyHistory(
   companyId: string,
   verified: boolean,
 ): Promise<CompanyHistory> {
-  const [stats] = await getDb()
-    .select({
-      total: count(),
-      responded: count(sql`case when ${applications.status} <> 'applied' then 1 end`),
-      hires: count(sql`case when ${applications.status} = 'offered' then 1 end`),
-    })
-    .from(applications)
-    .innerJoin(jobs, eq(applications.jobId, jobs.id))
-    .where(and(eq(jobs.companyId, companyId), ne(jobs.status, "draft")));
-
+  const stats = (await companyResponseStats([companyId])).get(companyId);
   return {
     verified,
-    completedHires: stats.hires,
-    responseRate: stats.total >= 3 ? stats.responded / stats.total : null,
+    completedHires: stats?.completedHires ?? 0,
+    responseRate: stats?.responseRate ?? null,
+    slowResponder: stats?.slowResponder ?? false,
   };
 }

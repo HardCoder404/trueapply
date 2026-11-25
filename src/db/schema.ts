@@ -235,7 +235,14 @@ export const applications = pgTable(
       .notNull(),
     status: applicationStageEnum("status").default("applied").notNull(),
     skillScore: smallint("skill_score"),
+    note: text("note"),
+    reason: text("reason"),
     appliedAt: timestamp("applied_at", { withTimezone: true }).defaultNow().notNull(),
+    stageChangedAt: timestamp("stage_changed_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    firstResponseAt: timestamp("first_response_at", { withTimezone: true }),
+    nudgedAt: timestamp("nudged_at", { withTimezone: true }),
     updatedAt: timestamps.updatedAt,
   },
   (table) => [
@@ -243,6 +250,22 @@ export const applications = pgTable(
     index("applications_user_id_idx").on(table.userId),
     index("applications_status_idx").on(table.status),
   ],
+);
+
+export const applicationEvents = pgTable(
+  "application_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    applicationId: uuid("application_id")
+      .references(() => applications.id, { onDelete: "cascade" })
+      .notNull(),
+    fromStage: applicationStageEnum("from_stage"),
+    toStage: applicationStageEnum("to_stage").notNull(),
+    reason: text("reason"),
+    actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [index("application_events_application_id_idx").on(table.applicationId)],
 );
 
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -298,7 +321,16 @@ export const skillScoresRelations = relations(skillScores, ({ one }) => ({
   }),
 }));
 
-export const applicationsRelations = relations(applications, ({ one }) => ({
+export const applicationsRelations = relations(applications, ({ one, many }) => ({
   job: one(jobs, { fields: [applications.jobId], references: [jobs.id] }),
   user: one(users, { fields: [applications.userId], references: [users.id] }),
+  events: many(applicationEvents),
+}));
+
+export const applicationEventsRelations = relations(applicationEvents, ({ one }) => ({
+  application: one(applications, {
+    fields: [applicationEvents.applicationId],
+    references: [applications.id],
+  }),
+  actor: one(users, { fields: [applicationEvents.actorId], references: [users.id] }),
 }));

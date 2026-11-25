@@ -7,6 +7,9 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { DashboardSkeleton } from "@/components/layout/dashboard-skeleton";
+import { Button } from "@/components/ui/button";
+import { StageBadge } from "@/features/applications/components/stage-badge";
+import { getApplication } from "@/features/applications/queries";
 import { getCurrentUser } from "@/features/auth/queries";
 import { ChallengeCard } from "@/features/challenges/components/challenge-card";
 import { submissionsForJob } from "@/features/challenges/queries";
@@ -40,7 +43,10 @@ async function JobChallenges({ params }: Pick<ChallengesPageProps, "params">) {
     );
   }
 
-  const { challenges, byChallenge } = await submissionsForJob(job.id, account.id);
+  const [{ challenges, byChallenge }, application] = await Promise.all([
+    submissionsForJob(job.id, account.id),
+    getApplication(job.id, account.id),
+  ]);
   const scored = challenges.filter(
     (c) => byChallenge.get(c.id)?.status === "evaluated",
   ).length;
@@ -72,6 +78,34 @@ async function JobChallenges({ params }: Pick<ChallengesPageProps, "params">) {
           {scored} / {challenges.length} scored
         </p>
       </div>
+
+      {(scored > 0 || application) && (
+        <div className="mt-8 flex flex-wrap items-center gap-3 rounded-xl bg-card p-5 ring-1 ring-foreground/10">
+          {application ? (
+            <>
+              <StageBadge stage={application.status} />
+              <p className="text-sm text-muted-foreground">
+                You applied with a score of {application.skillScore ?? "—"}.
+              </p>
+              <Button asChild variant="outline" className="ml-auto h-11 px-5 text-sm">
+                <Link href="/seeker/applications">Track it</Link>
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm">
+                <span className="font-medium">{scored} graded.</span>{" "}
+                <span className="text-muted-foreground">
+                  You can apply now, or do more to raise the score.
+                </span>
+              </p>
+              <Button asChild className="ml-auto h-11 px-5 text-sm">
+                <Link href={`/jobs/${job.slug}/apply`}>Apply with your score</Link>
+              </Button>
+            </>
+          )}
+        </div>
+      )}
 
       {challenges.length ? (
         <div className="mt-8 grid gap-px overflow-hidden rounded-xl bg-border">

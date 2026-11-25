@@ -24,6 +24,7 @@ export type CompanyHistory = {
   verified: boolean;
   completedHires: number;
   responseRate: number | null;
+  slowResponder: boolean;
 };
 
 type JobDraft = {
@@ -146,9 +147,14 @@ function companySignals(company: CompanyHistory): RealitySignal[] {
       : {
           key: "response-rate",
           label: "Company responds to applicants",
-          points: Math.round(company.responseRate * 20),
+          points: Math.max(
+            0,
+            Math.round(company.responseRate * 20) - (company.slowResponder ? 5 : 0),
+          ),
           max: 20,
-          detail: `${Math.round(company.responseRate * 100)}% of applicants heard back within a week.`,
+          detail: `${Math.round(company.responseRate * 100)}% of applicants heard back within a week.${
+            company.slowResponder ? " Someone is currently waiting past a week." : ""
+          }`,
         };
 
   return [

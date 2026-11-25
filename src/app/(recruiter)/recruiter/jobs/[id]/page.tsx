@@ -8,6 +8,7 @@ import { DashboardSkeleton } from "@/components/layout/dashboard-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { requireRole } from "@/features/auth/queries";
+import { countJobApplicants } from "@/features/applications/queries";
 import { regenerateChallenges } from "@/features/challenges/actions";
 import { countJobSubmissions, listJobChallenges } from "@/features/challenges/queries";
 import { closeJob, publishJob } from "@/features/jobs/actions";
@@ -30,9 +31,10 @@ async function ManageJob({ params }: Pick<ManageJobPageProps, "params">) {
     : null;
   if (!job) notFound();
 
-  const [challenges, submissionCount] = await Promise.all([
+  const [challenges, submissionCount, applicantCount] = await Promise.all([
     listJobChallenges(job.id),
     countJobSubmissions(job.id),
+    countJobApplicants(job.id),
   ]);
 
   return (
@@ -63,6 +65,14 @@ async function ManageJob({ params }: Pick<ManageJobPageProps, "params">) {
         </div>
 
         <div className="flex flex-wrap gap-3">
+          <Button asChild className="h-11 px-5 text-sm">
+            <Link href={`/recruiter/jobs/${job.id}/applicants`}>
+              Applicants
+              <span className="ml-1.5 font-mono text-xs opacity-70">
+                {applicantCount}
+              </span>
+            </Link>
+          </Button>
           {job.status !== "archived" && (
             <Button asChild variant="outline" className="h-11 px-5 text-sm">
               <Link href={`/recruiter/jobs/${job.id}/edit`}>Edit</Link>

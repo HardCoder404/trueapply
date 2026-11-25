@@ -3,6 +3,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
+import { companyResponseStats } from "@/features/applications/queries";
 import { JobCard } from "@/features/jobs/components/job-card";
 import { JobFiltersForm } from "@/features/jobs/components/job-filters";
 import { listOpenJobs } from "@/features/jobs/queries";
@@ -22,6 +23,9 @@ async function JobResults({ searchParams }: Pick<JobsPageProps, "searchParams">)
   const parsed = jobFiltersSchema.safeParse(await searchParams);
   const filters = parsed.success ? parsed.data : {};
   const { jobs, total, page, pages } = await listOpenJobs(filters);
+  const responses = await companyResponseStats([
+    ...new Set(jobs.map((job) => job.companyId)),
+  ]);
 
   return (
     <>
@@ -37,7 +41,7 @@ async function JobResults({ searchParams }: Pick<JobsPageProps, "searchParams">)
       {jobs.length ? (
         <div className="mt-3 grid gap-px overflow-hidden rounded-xl bg-border">
           {jobs.map((job) => (
-            <JobCard key={job.id} job={job} />
+            <JobCard key={job.id} job={job} response={responses.get(job.companyId)} />
           ))}
         </div>
       ) : (

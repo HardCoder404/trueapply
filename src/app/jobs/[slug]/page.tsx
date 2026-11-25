@@ -5,6 +5,12 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
+import { auth } from "@clerk/nextjs/server";
+
+import { ResponseBadge } from "@/features/applications/components/response-badge";
+import { StageBadge } from "@/features/applications/components/stage-badge";
+import { companyResponseStats, getApplication } from "@/features/applications/queries";
+import { getCurrentUser } from "@/features/auth/queries";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RealityBadge } from "@/features/jobs/components/reality-badge";
@@ -78,6 +84,12 @@ async function JobDetail({ params }: Pick<JobPageProps, "params">) {
   if (!job) notFound();
 
   const daysLeft = daysBetween(new Date(), job.deadline);
+  const { isAuthenticated } = await auth();
+  const account = isAuthenticated ? await getCurrentUser() : null;
+  const [response, application] = await Promise.all([
+    companyResponseStats([job.companyId]).then((stats) => stats.get(job.companyId)),
+    account?.role === "seeker" ? getApplication(job.id, account.id) : null,
+  ]);
 
   return (
     <article className="grid gap-10 lg:grid-cols-[1.6fr_1fr]">
@@ -105,7 +117,10 @@ async function JobDetail({ params }: Pick<JobPageProps, "params">) {
               {job.remote && " · Remote friendly"}
             </p>
           </div>
-          <RealityBadge score={job.realityScore} />
+          <div className="flex flex-col items-end gap-1.5">
+            <RealityBadge score={job.realityScore} />
+            <ResponseBadge stats={response} />
+          </div>
         </div>
 
         <dl className="mt-8 grid grid-cols-2 gap-4 rounded-xl bg-card p-5 ring-1 ring-foreground/10 sm:grid-cols-3">
@@ -159,12 +174,24 @@ async function JobDetail({ params }: Pick<JobPageProps, "params">) {
         </section>
 
         <div className="mt-10">
-          <Button asChild className="h-11 px-5 text-sm">
-            <Link href={`/jobs/${job.slug}/challenges`}>Take the challenges</Link>
-          </Button>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Timed work samples graded on the spot. Scores go on your portfolio.
-          </p>
+          {application ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <StageBadge stage={application.status} />
+              <Button asChild variant="outline" className="h-11 px-5 text-sm">
+                <Link href="/seeker/applications">Track your application</Link>
+              </Button>
+            </div>
+          ) : (
+            <>
+              <Button asChild className="h-11 px-5 text-sm">
+                <Link href={`/jobs/${job.slug}/challenges`}>Take the challenges</Link>
+              </Button>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Timed work samples graded on the spot. Apply with the score once one is
+                graded.
+              </p>
+            </>
+          )}
         </div>
       </div>
 

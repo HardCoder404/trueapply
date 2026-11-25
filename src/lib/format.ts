@@ -31,6 +31,10 @@ export function daysBetween(from: Date, to: Date) {
   return Math.ceil((to.getTime() - from.getTime()) / dayMs);
 }
 
+export function daysSince(date: Date, now = new Date()) {
+  return Math.max(0, Math.floor((now.getTime() - date.getTime()) / dayMs));
+}
+
 export function toDateInputValue(date: Date) {
   return date.toISOString().slice(0, 10);
 }

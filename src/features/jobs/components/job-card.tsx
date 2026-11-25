@@ -1,12 +1,20 @@
 import Link from "next/link";
 
+import { ResponseBadge } from "@/features/applications/components/response-badge";
+import type { ResponseStats } from "@/features/applications/queries";
 import { Badge } from "@/components/ui/badge";
 import { daysBetween, formatSalaryRange } from "@/lib/format";
 
 import type { JobWithCompany } from "../types";
 import { RealityBadge } from "./reality-badge";
 
-export function JobCard({ job }: { job: JobWithCompany }) {
+export function JobCard({
+  job,
+  response,
+}: {
+  job: JobWithCompany;
+  response?: ResponseStats;
+}) {
   const daysLeft = daysBetween(new Date(), job.deadline);
 
   return (
@@ -23,7 +31,10 @@ export function JobCard({ job }: { job: JobWithCompany }) {
             {job.remote && " · Remote"}
           </p>
         </div>
-        <RealityBadge score={job.realityScore} className="shrink-0" />
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <RealityBadge score={job.realityScore} />
+          <ResponseBadge stats={response} />
+        </div>
       </div>
 
       <dl className="flex flex-wrap gap-x-6 gap-y-1 text-sm">

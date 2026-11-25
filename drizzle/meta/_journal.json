@@ -29,6 +29,13 @@
       "when": 1795597275497,
       "tag": "0003_lyrical_mad_thinker",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795598088875,
+      "tag": "0004_aromatic_wilson_fisk",
+      "breakpoints": true
     }
   ]
 }

@@ -7,6 +7,7 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { countWaitingApplicants } from "@/features/applications/queries";
 import { ProfileCompletion } from "@/features/auth/components/profile-completion";
 import { recruiterCompletion } from "@/features/auth/profile-completion";
 import { requireRole } from "@/features/auth/queries";
@@ -38,6 +39,7 @@ async function RecruiterDashboard() {
   const account = await requireRole("recruiter");
   const company = account.company;
   const completion = recruiterCompletion(company);
+  const waiting = company ? await countWaitingApplicants(company.id) : 0;
 
   return (
     <div className="space-y-10">
@@ -48,7 +50,18 @@ async function RecruiterDashboard() {
         <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
           {company?.name ?? account.name}
         </h1>
-        <p className="mt-2 text-muted-foreground">Signed in as {account.name}</p>
+        <p className="mt-2 text-muted-foreground">
+          Signed in as {account.name}
+          {waiting > 0 && (
+            <>
+              {" "}
+              ·{" "}
+              <span className="text-foreground">
+                {waiting} applicant{waiting === 1 ? "" : "s"} waiting for a first response
+              </span>
+            </>
+          )}
+        </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Button asChild className="h-11 px-5 text-sm">
             <Link href="/recruiter/jobs/new">Post a role</Link>

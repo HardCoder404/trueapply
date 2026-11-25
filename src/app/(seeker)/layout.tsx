@@ -10,6 +10,7 @@ export default function SeekerLayout({ children }: { children: ReactNode }) {
         links={[
           { href: "/seeker/dashboard", label: "Overview" },
           { href: "/jobs", label: "Jobs" },
+          { href: "/seeker/applications", label: "Applications" },
           { href: "/seeker/settings", label: "Settings" },
         ]}
       />

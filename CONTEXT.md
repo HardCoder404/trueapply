@@ -1,8 +1,8 @@
 # TrueApply — Session Context (Save Point)
 
 > Last updated: November 25, 2026
-> Phase: 3 — Skill Verification → DONE & LIVE-TESTED 25 Nov 2026
-> Next: Phase 4 — Transparent Application Pipeline (apply with score, stages, recruiter review, response-rate feeding Reality Score)
+> Phase: 4 — Application Pipeline & Transparency → DONE & LIVE-TESTED 25 Nov 2026
+> Next: Phase 5 — AI Career Coach + RAG pipeline
 
 ---
 
@@ -13,6 +13,26 @@
 - **Tagline:** "True jobs. True skills. True hiring."
 - **Deploy URL:** trueapply.vercel.app (not deployed yet)
 - **Cost:** $0 MVP (all free tiers)
+
+---
+
+## Phase 4 — Built 25 Nov 2026 (applications, pipeline, transparency)
+
+Verification: lint 0 · type-check 0 · build OK · live: seeker applied with score 52 (mean of graded challenges), recruiter dashboard shows waiting count, applicants page filters (min score, skill, level, stage) work, shortlist with required reason → seeker page updated **live via SSE** without reload, bulk action updated 1, timeline shows reasons, nudge cron 401/200, stream 401 for anonymous, no overflow at 375 on applicants/board/applications. Resend accepted a test email from noreply@prince404.in.
+
+### What exists
+- Email: Resend via plain fetch in `src/lib/email/send.ts` (best-effort, never throws; skips when `RESEND_API_KEY`/`EMAIL_FROM` unset). Templates in `src/lib/email/templates.ts` (monochrome HTML + text): stage changed (to seeker, includes reason), new applicant (to recruiter), nudge (to recruiter). Domain prince404.in is verified on the user's Resend account; `.env` has the key.
+- Schema (migration `0004`): `applications` + `note`, `reason`, `stage_changed_at`, `first_response_at`, `nudged_at`; new `application_events` (from/to stage, reason, actor) = timeline.
+- `src/features/applications/`: `schemas.ts` (reason required 8–400 chars for every stage change; bulk ≤50), `queries.ts` (`jobSkillScore` = mean of evaluated submissions incl. retired challenges, `listSeekerApplications`, `listJobApplicants` ranked by score w/ filters, `companyResponseStats` → responseRate [needs ≥3 apps], slowResponder [any applicant waiting >7 days], completedHires; `staleApplicationsForNudge`), `actions.ts` (`applyToJob` requires ≥1 graded challenge, `moveStage`, `bulkMoveStage`, `markNudged`), components (apply-form, stage-form, bulk-bar [checkboxes use `form=` attribute], timeline, stage-badge, response-badge, live-refresh).
+- Routes: `/jobs/[slug]/apply`, `/seeker/applications` (LiveRefresh + days since last update + timeline), `/recruiter/jobs/[id]/applicants` (filters, bulk bar, per-row stage form), `GET /api/applications/stream` (SSE: polls max(updated_at) every 5 s for ≤50 s, client EventSource auto-reconnects, `router.refresh()` on change), `GET /api/cron/nudge-recruiters` (5-day stale → one email per job, sets nudged_at; vercel.json 04:00 daily).
+- Transparency: job cards + detail show "Replies to N% within 7 days" or dashed "Slow responder"; Reality Score response signal now uses `first_response_at` within window and subtracts 5 when a slow-responder flag is active. Recruiter dashboard shows "N applicants waiting for a first response". Manage page has Applicants button with count. Seeker dashboard lists applications; nav has Applications.
+- Gotcha: `export const dynamic` is rejected under `cacheComponents`; route handlers are dynamic anyway. Server-action redirects keep the old page in the DOM briefly, so Playwright selectors must be scoped (`main:has-text(...)`).
+
+### Phase 5 — Next Steps
+1. pgvector on Neon (`CREATE EXTENSION vector`), `embeddings` table; embed open jobs + skill-score aggregates with a Groq-compatible or local embedding model (Groq has no embeddings API → use Voyage/OpenAI-compatible or `@xenova/transformers` at build time).
+2. `/seeker/coach` chat (streaming via Groq) with tools: `search_jobs`, `skill_gaps(user)`, `salary_for(skill, level)` computed from real postings.
+3. Learning-path suggestions tied to the seeker's lowest verified skills.
+4. Save conversations (`coach_messages`), rate-limit per user.
 
 ---
 
@@ -178,7 +198,7 @@ Next.js API routes + Server Actions instead of Turborepo + FastAPI. Deploys enti
 | 1 | Auth & User System (Clerk) | DONE 25 Nov 2026 |
 | 2 | Job Posting + Ghost Job Detection AI | DONE 25 Nov 2026 (Groq) |
 | 3 | Skill Verification System | DONE 25 Nov 2026 (Groq, browser JS runner) |
-| 4 | Application Pipeline & Transparency | Not started |
+| 4 | Application Pipeline & Transparency | DONE 25 Nov 2026 (SSE + Resend) |
 | 5 | AI Career Coach + RAG Pipeline | Not started |
 | 6 | Reverse Hiring & Matching Engine | Not started |
 | 7 | Analytics & Polish | Not started |
