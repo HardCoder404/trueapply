@@ -9,7 +9,7 @@ TrueApply is a hiring platform that puts a trust layer between job seekers and r
 - Next.js 16 (App Router, Server Components, Server Actions)
 - TypeScript 5, Tailwind CSS v4, shadcn/ui (Radix), Motion
 - Clerk for authentication, Zod for validation
-- Groq (gpt-oss) for the ghost-job description check
+- Groq (gpt-oss) for the ghost-job description check, challenge generation and grading
 - Drizzle ORM on Neon Postgres
 - Deployed on Vercel
 
@@ -48,7 +48,9 @@ src/
 │   ├── (auth)/        /login, /register
 │   ├── onboarding/    role + profile setup after sign-up
 │   ├── dashboard/     routes a signed-in user to their role's dashboard
-│   ├── jobs/          public board and job pages
+│   ├── jobs/          public board, job pages, challenge list
+│   ├── challenges/    take a challenge, see the result
+│   ├── u/             public skill portfolios
 │   ├── api/cron/      scheduled jobs (expiry)
 │   ├── (seeker)/      /seeker/*
 │   └── (recruiter)/   /recruiter/*

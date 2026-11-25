@@ -8,6 +8,7 @@ import { z } from "zod";
 import { getDb } from "@/db";
 import { companies, seekerProfiles, users } from "@/db/schema";
 import { freeMailDomains } from "@/lib/constants";
+import { slugify } from "@/lib/format";
 
 import { dashboardPath } from "./queries";
 import { onboardingSchema } from "./schemas";
@@ -78,7 +79,14 @@ export async function completeOnboarding(
 
   const data = parsed.data;
   const id = crypto.randomUUID();
-  const account = { id, clerkId: userId, email, name: data.name, role: data.role };
+  const account = {
+    id,
+    clerkId: userId,
+    email,
+    name: data.name,
+    handle: `${slugify(data.name)}-${id.slice(0, 6)}`,
+    role: data.role,
+  };
 
   if (data.role === "seeker") {
     await db.batch([

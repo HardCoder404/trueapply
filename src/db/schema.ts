@@ -32,6 +32,12 @@ export const challengeDifficultyEnum = pgEnum(
   challengeDifficulties,
 );
 export const experienceLevelEnum = pgEnum("experience_level", experienceLevels);
+export const submissionStatusEnum = pgEnum("submission_status", [
+  "started",
+  "submitted",
+  "evaluated",
+  "failed",
+]);
 export const applicationStageEnum = pgEnum("application_stage", applicationStages);
 
 const timestamps = {
@@ -49,12 +55,14 @@ export const users = pgTable(
     clerkId: text("clerk_id").notNull(),
     email: text("email").notNull(),
     name: text("name").notNull(),
+    handle: text("handle"),
     role: userRoleEnum("role").notNull(),
     ...timestamps,
   },
   (table) => [
     uniqueIndex("users_clerk_id_idx").on(table.clerkId),
     uniqueIndex("users_email_idx").on(table.email),
+    uniqueIndex("users_handle_idx").on(table.handle),
   ],
 );
 
@@ -142,13 +150,27 @@ export const challenges = pgTable(
       .notNull(),
     title: text("title").notNull(),
     description: text("description").notNull(),
+    skill: text("skill").notNull(),
     type: challengeTypeEnum("type").notNull(),
     difficulty: challengeDifficultyEnum("difficulty").notNull(),
     timeLimitMinutes: smallint("time_limit_minutes").notNull(),
+    language: text("language"),
+    starterCode: text("starter_code"),
+    rubric: jsonb("rubric").$type<string[]>().default([]).notNull(),
+    position: smallint("position").default(0).notNull(),
     ...timestamps,
   },
   (table) => [index("challenges_job_id_idx").on(table.jobId)],
 );
+
+export type EvaluationBreakdown = {
+  correctness: number;
+  quality: number;
+  edgeCases: number;
+  readability: number;
+  strengths: string[];
+  gaps: string[];
+};
 
 export const submissions = pgTable(
   "submissions",
@@ -160,13 +182,18 @@ export const submissions = pgTable(
     userId: uuid("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
-    code: text("code").notNull(),
+    status: submissionStatusEnum("status").default("started").notNull(),
+    code: text("code"),
+    runOutput: text("run_output"),
     score: smallint("score"),
     feedback: text("feedback"),
+    breakdown: jsonb("breakdown").$type<EvaluationBreakdown>(),
+    startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
     createdAt: timestamps.createdAt,
   },
   (table) => [
-    index("submissions_challenge_id_idx").on(table.challengeId),
+    uniqueIndex("submissions_challenge_user_idx").on(table.challengeId, table.userId),
     index("submissions_user_id_idx").on(table.userId),
   ],
 );
@@ -185,7 +212,7 @@ export const skillScores = pgTable(
     }),
     verifiedAt: timestamp("verified_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (table) => [index("skill_scores_user_skill_idx").on(table.userId, table.skill)],
+  (table) => [uniqueIndex("skill_scores_user_skill_idx").on(table.userId, table.skill)],
 );
 
 export const applications = pgTable(

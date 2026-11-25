@@ -8,6 +8,8 @@ import { DashboardSkeleton } from "@/components/layout/dashboard-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { requireRole } from "@/features/auth/queries";
+import { regenerateChallenges } from "@/features/challenges/actions";
+import { countJobSubmissions, listJobChallenges } from "@/features/challenges/queries";
 import { closeJob, publishJob } from "@/features/jobs/actions";
 import { RealityBadge } from "@/features/jobs/components/reality-badge";
 import { RealityBreakdown } from "@/features/jobs/components/reality-breakdown";
@@ -27,6 +29,11 @@ async function ManageJob({ params }: Pick<ManageJobPageProps, "params">) {
     ? await getCompanyJob((await params).id, account.company.id)
     : null;
   if (!job) notFound();
+
+  const [challenges, submissionCount] = await Promise.all([
+    listJobChallenges(job.id),
+    countJobSubmissions(job.id),
+  ]);
 
   return (
     <div className="grid gap-10 lg:grid-cols-[1.6fr_1fr]">
@@ -94,6 +101,44 @@ async function ManageJob({ params }: Pick<ManageJobPageProps, "params">) {
           <div className="mt-4 text-[15px] leading-relaxed whitespace-pre-line">
             {job.description}
           </div>
+        </section>
+
+        <section>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-mono text-xs tracking-wide text-muted-foreground uppercase">
+              Challenges · {submissionCount} attempt{submissionCount === 1 ? "" : "s"}
+            </h2>
+            {job.status !== "archived" && submissionCount === 0 && (
+              <form action={regenerateChallenges}>
+                <input type="hidden" name="jobId" value={job.id} />
+                <Button type="submit" variant="outline" size="sm">
+                  {challenges.length ? "Regenerate" : "Generate challenges"}
+                </Button>
+              </form>
+            )}
+          </div>
+          {challenges.length ? (
+            <ol className="mt-4 divide-y rounded-xl ring-1 ring-foreground/10">
+              {challenges.map((challenge) => (
+                <li key={challenge.id} className="space-y-1 p-4">
+                  <p className="font-mono text-xs text-muted-foreground uppercase">
+                    {challenge.skill} · {challenge.difficulty} ·{" "}
+                    {challenge.timeLimitMinutes} min
+                    {challenge.language && ` · ${challenge.language}`}
+                  </p>
+                  <p className="font-medium">{challenge.title}</p>
+                  <p className="line-clamp-2 text-sm text-muted-foreground">
+                    {challenge.description}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="mt-4 text-sm text-muted-foreground">
+              Challenges are generated from the description when you publish. Candidates
+              cannot apply without them.
+            </p>
+          )}
         </section>
 
         <section>

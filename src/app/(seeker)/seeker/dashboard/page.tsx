@@ -5,10 +5,11 @@ import { DashboardSkeleton } from "@/components/layout/dashboard-skeleton";
 
 import Link from "next/link";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProfileCompletion } from "@/features/auth/components/profile-completion";
 import { seekerCompletion } from "@/features/auth/profile-completion";
+import { SkillScoreList } from "@/features/challenges/components/skill-score-list";
+import { listUserSkillScores, listUserSubmissions } from "@/features/challenges/queries";
 import { requireRole } from "@/features/auth/queries";
 import { experienceLevelLabels } from "@/lib/constants";
 
@@ -24,9 +25,9 @@ const upcoming = [
     body: "Data-backed answers on what to learn next, from real postings on the platform.",
   },
   {
-    phase: "03",
-    title: "Skill challenges",
-    body: "Short, role-specific tasks that turn your skill tags into scores.",
+    phase: "06",
+    title: "Get discovered",
+    body: "Companies browse verified candidates and invite them to interview.",
   },
   {
     phase: "04",
@@ -40,6 +41,10 @@ async function SeekerDashboard() {
   const profile = account.seekerProfile;
   const completion = seekerCompletion(profile);
   const firstName = account.name.split(" ")[0];
+  const [scores, recent] = await Promise.all([
+    listUserSkillScores(account.id),
+    listUserSubmissions(account.id, 5),
+  ]);
 
   return (
     <div className="space-y-10">
@@ -53,9 +58,16 @@ async function SeekerDashboard() {
         {profile?.headline && (
           <p className="mt-2 text-muted-foreground">{profile.headline}</p>
         )}
-        <Button asChild className="mt-6 h-11 px-5 text-sm">
-          <Link href="/jobs">Browse open roles</Link>
-        </Button>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Button asChild className="h-11 px-5 text-sm">
+            <Link href="/jobs">Browse open roles</Link>
+          </Button>
+          {account.handle && (
+            <Button asChild variant="outline" className="h-11 px-5 text-sm">
+              <Link href={`/u/${account.handle}`}>Public portfolio</Link>
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
@@ -78,25 +90,57 @@ async function SeekerDashboard() {
               </span>
             )}
           </div>
-          {profile?.skills.length ? (
-            <ul className="mt-4 flex flex-wrap gap-2">
-              {profile.skills.map((skill) => (
-                <li key={skill}>
-                  <Badge variant="outline" className="h-7 px-3 font-normal">
-                    {skill}
-                    <span className="text-muted-foreground">· unverified</span>
-                  </Badge>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-4 text-sm text-muted-foreground">No skills added yet.</p>
-          )}
+          <div className="mt-4">
+            <SkillScoreList scores={scores} claimed={profile?.skills ?? []} />
+          </div>
           <p className="mt-4 text-xs text-muted-foreground">
-            Tags are claims. Challenges turn them into verified scores in Phase 3.
+            Filled badges are verified by graded challenges. Outlined ones are still
+            claims.
           </p>
         </section>
       </div>
+
+      {recent.length > 0 && (
+        <section aria-labelledby="recent-heading">
+          <h2
+            id="recent-heading"
+            className="font-mono text-xs tracking-wide text-muted-foreground uppercase"
+          >
+            Recent challenges
+          </h2>
+          <ul className="mt-4 divide-y rounded-xl ring-1 ring-foreground/10">
+            {recent.map((submission) => (
+              <li
+                key={submission.id}
+                className="flex items-center justify-between gap-4 p-4"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-medium">
+                    <Link
+                      href={
+                        submission.status === "started"
+                          ? `/challenges/${submission.challengeId}`
+                          : `/challenges/${submission.challengeId}/result`
+                      }
+                      className="hover:underline"
+                    >
+                      {submission.challenge.title}
+                    </Link>
+                  </p>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {submission.challenge.job.title} · {submission.challenge.skill}
+                  </p>
+                </div>
+                <span className="shrink-0 font-mono text-sm tabular-nums">
+                  {submission.status === "evaluated"
+                    ? `${submission.score} / 100`
+                    : submission.status}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section aria-labelledby="upcoming-heading">
         <h2

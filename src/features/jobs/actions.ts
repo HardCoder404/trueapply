@@ -9,6 +9,9 @@ import { z } from "zod";
 import { getDb } from "@/db";
 import { jobs } from "@/db/schema";
 import { getCurrentUser } from "@/features/auth/queries";
+import { createChallengesForJob } from "@/features/challenges/actions";
+import { listJobChallenges } from "@/features/challenges/queries";
+import { GroqUnavailableError } from "@/lib/ai/groq";
 import { lakhsToInr, slugify } from "@/lib/format";
 
 import { companyHistory, countRecentJobs, getCompanyJob } from "./queries";
@@ -32,6 +35,21 @@ async function recruiterCompany() {
 function text(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value : "";
+}
+
+async function ensureChallenges(job: {
+  id: string;
+  title: string;
+  description: string;
+  skills: string[];
+}) {
+  if ((await listJobChallenges(job.id)).length) return;
+  try {
+    await createChallengesForJob(job);
+  } catch (error) {
+    if (!(error instanceof GroqUnavailableError || error instanceof SyntaxError))
+      throw error;
+  }
 }
 
 function revalidateJobPaths(slug?: string) {
@@ -112,6 +130,8 @@ export async function saveJob(
     await db.insert(jobs).values({ id, ...values });
   }
 
+  if (publish) await ensureChallenges({ id, ...draft });
+
   revalidateJobPaths(values.slug);
   redirect(`/recruiter/jobs/${id}`);
 }
@@ -131,6 +151,8 @@ export async function publishJob(formData: FormData) {
       publishedAt: job.publishedAt ?? new Date(),
     })
     .where(eq(jobs.id, job.id));
+
+  await ensureChallenges(job);
 
   revalidateJobPaths(job.slug);
   redirect(`/recruiter/jobs/${job.id}`);

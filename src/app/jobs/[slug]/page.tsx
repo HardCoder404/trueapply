@@ -160,10 +160,10 @@ async function JobDetail({ params }: Pick<JobPageProps, "params">) {
 
         <div className="mt-10">
           <Button asChild className="h-11 px-5 text-sm">
-            <Link href={`/register?role=seeker`}>Take the challenge to apply</Link>
+            <Link href={`/jobs/${job.slug}/challenges`}>Take the challenges</Link>
           </Button>
           <p className="mt-2 text-xs text-muted-foreground">
-            Challenges and applications open in the next release.
+            Timed work samples graded on the spot. Scores go on your portfolio.
           </p>
         </div>
       </div>

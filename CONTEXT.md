@@ -1,8 +1,8 @@
 # TrueApply — Session Context (Save Point)
 
-> Last updated: November 23, 2026
-> Phase: 2 — Job Posting + Ghost Job Detection → DONE & LIVE-TESTED 25 Nov 2026
-> Next: Phase 3 — Skill Verification (challenge generator, sandbox, evaluator, skill portfolio)
+> Last updated: November 25, 2026
+> Phase: 3 — Skill Verification → DONE & LIVE-TESTED 25 Nov 2026
+> Next: Phase 4 — Transparent Application Pipeline (apply with score, stages, recruiter review, response-rate feeding Reality Score)
 
 ---
 
@@ -13,6 +13,28 @@
 - **Tagline:** "True jobs. True skills. True hiring."
 - **Deploy URL:** trueapply.vercel.app (not deployed yet)
 - **Cost:** $0 MVP (all free tiers)
+
+---
+
+## Phase 3 — Built 25 Nov 2026 (challenges, grading, skill portfolio)
+
+Verification: lint 0 · type-check 0 · build OK · live: recruiter generated 3 challenges for the Northwind role, seeker started one (timer ran), ran JS in the browser, submitted, Groq graded it 94/100 with breakdown + feedback, skill score landed on dashboard and public portfolio `/u/test-seeker-c04373`; anonymous hit on challenges page redirects to /login with return URL; give-up closes the attempt; no overflow at 375 after header fix.
+
+### What exists
+- Schema (migration `0002` applied): `challenges` + `skill`, `language`, `starter_code`, `rubric` jsonb, `position`; `submissions` + `status` enum (started/submitted/evaluated/failed), `run_output`, `breakdown` jsonb (`EvaluationBreakdown`), `started_at`, `submitted_at`, unique (challenge, user) = one attempt; `skill_scores` unique (user, skill), upsert keeps the best; `users.handle` unique (slug of name + 6 chars of id; backfilled for existing rows, set in onboarding).
+- `src/features/challenges/`: `generator.ts` (Groq → 2–3 role-specific work samples with rubric; "javascript" only for plain runnable scripts, "typescript" for React/TSX, null for written), `evaluator.ts` (Groq grades correctness 40 / quality 25 / edge cases 20 / readability 15 + feedback + strengths/gaps), `queries.ts`, `actions.ts` (`createChallengesForJob`, `regenerateChallenges` [recruiter, only while 0 attempts], `startChallenge`, `submitChallenge` [time limit + 60 s grace, status → submitted → evaluated/failed], `retryEvaluation`, `abandonChallenge`), components (`submission-form` client w/ Tab-indent + in-browser JS runner in a Web Worker with 3 s timeout, `challenge-timer` via useSyncExternalStore, `challenge-card`, `evaluation-summary`, `skill-score-list`).
+- Routes: `/jobs/[slug]/challenges` (signed-in seeker; recruiters get a notice), `/challenges/[id]` (take; AppHeader "Challenge"), `/challenges/[id]/result`, public `/u/[handle]` portfolio (generateMetadata, filled = verified / outlined = claimed). `PublicShell` layout shared by /jobs and /u.
+- Hooks: publishing a job (saveJob publish or publishJob) auto-generates challenges if none exist (Groq failure is swallowed; recruiter can hit "Generate challenges" on the manage page). Recruiter manage page lists challenges + attempt count. Seeker dashboard shows verified badges with scores, recent challenges, portfolio link.
+- Sandbox decision: Piston's public API went whitelist-only (Feb 2026), so v1 runs plain JavaScript in a browser Web Worker (console capture, no DOM/imports) and sends the output to the grader as evidence. TypeScript/Python/written tasks are graded from source only. Self-hosted Piston or Judge0 is the upgrade path.
+- Not done: Monaco editor (plain textarea for now), proctoring/anti-paste, challenge regeneration after attempts exist, recruiter view of individual submissions (Phase 4).
+
+### Phase 4 — Next Steps
+1. Apply: `/jobs/[slug]/apply` requires ≥1 evaluated challenge for that job; creates `applications` row with the aggregate skill score snapshot.
+2. Recruiter pipeline `/recruiter/jobs/[id]/applicants`: list by stage, see each submission + score + feedback, move stage, reject with reason.
+3. Seeker `/seeker/applications`: stage, days in stage, recruiter last-seen.
+4. Response-rate: `companyHistory()` already reads `applications.status`; stage changes within `recruiterResponseWindowDays` feed the Reality Score on next publish/rescore.
+5. Notifications (Resend) for stage changes; nudge recruiters on stale applications (cron).
+6. Pipeline transparency on the public job page ("N applicants, median response 2 days").
 
 ---
 
@@ -150,7 +172,7 @@ Next.js API routes + Server Actions instead of Turborepo + FastAPI. Deploys enti
 | 0 | Foundation & Setup | DONE 23 Nov 2026 |
 | 1 | Auth & User System (Clerk) | DONE 25 Nov 2026 |
 | 2 | Job Posting + Ghost Job Detection AI | DONE 25 Nov 2026 (Groq) |
-| 3 | Skill Verification System | Not started |
+| 3 | Skill Verification System | DONE 25 Nov 2026 (Groq, browser JS runner) |
 | 4 | Application Pipeline & Transparency | Not started |
 | 5 | AI Career Coach + RAG Pipeline | Not started |
 | 6 | Reverse Hiring & Matching Engine | Not started |
