@@ -6,6 +6,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { DashboardSkeleton } from "@/components/layout/dashboard-skeleton";
+import { Button } from "@/components/ui/button";
 import { requireRole } from "@/features/auth/queries";
 import { EvaluationSummary } from "@/features/challenges/components/evaluation-summary";
 import { IntegrityNote } from "@/features/challenges/components/integrity-note";
@@ -89,10 +90,19 @@ async function Submissions({ params }: Pick<SubmissionsPageProps, "params">) {
                     </p>
                   )}
                 </div>
-                <p className="font-mono text-xs text-muted-foreground uppercase">
-                  {submissions.filter((s) => s.status === "evaluated").length} /{" "}
-                  {submissions.length} scored
-                </p>
+                <div className="flex items-center gap-3">
+                  <p className="font-mono text-xs text-muted-foreground uppercase">
+                    {submissions.filter((s) => s.status === "evaluated").length} /{" "}
+                    {submissions.length} scored
+                  </p>
+                  {job.status === "open" && (
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/recruiter/talent/${user.id}?job=${job.id}`}>
+                        Invite to interview
+                      </Link>
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <ul className="divide-y">

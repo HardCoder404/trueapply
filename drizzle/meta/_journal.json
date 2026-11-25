@@ -43,6 +43,13 @@
       "when": 1795599058617,
       "tag": "0005_premium_rattler",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795601192522,
+      "tag": "0006_reverse_hiring",
+      "breakpoints": true
     }
   ]
 }

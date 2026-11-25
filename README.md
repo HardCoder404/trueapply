@@ -56,13 +56,14 @@ src/
 │   ├── api/cron/      scheduled jobs (expiry, recruiter nudges)
 │   ├── api/applications/stream   live status updates (SSE)
 │   ├── api/coach/     career coach agent (streams NDJSON)
+│   ├── (recruiter)/recruiter/talent   anonymous talent pool, matches, invitations
 │   ├── (seeker)/      /seeker/*
 │   └── (recruiter)/   /recruiter/*
 ├── components/
 │   ├── ui/        shadcn primitives
 │   ├── layout/    header, footer, wordmark
 │   └── motion/    client-side animation wrappers
-├── features/      domain code grouped by feature (auth, jobs, challenges)
+├── features/      domain code grouped by feature (auth, jobs, challenges, coach, talent)
 ├── db/            Drizzle schema and Neon client
 └── lib/           shared helpers and constants
 ```

@@ -20,6 +20,7 @@ export function seekerCompletion(profile: SeekerProfile | null): Completion {
     ["Skills", (profile?.skills.length ?? 0) > 0],
     ["Location", Boolean(profile?.location)],
     ["Experience level", Boolean(profile?.experienceLevel)],
+    ["Preferred roles", (profile?.preferredRoles.length ?? 0) > 0],
   ]);
 }
 

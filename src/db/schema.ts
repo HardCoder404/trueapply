@@ -79,6 +79,8 @@ export const seekerProfiles = pgTable(
     skills: text("skills").array().default([]).notNull(),
     location: text("location"),
     experienceLevel: experienceLevelEnum("experience_level"),
+    preferredRoles: text("preferred_roles").array().default([]).notNull(),
+    discoverable: boolean("discoverable").default(true).notNull(),
     ...timestamps,
   },
   (table) => [uniqueIndex("seeker_profiles_user_id_idx").on(table.userId)],
@@ -160,6 +162,7 @@ export const challenges = pgTable(
     rubric: jsonb("rubric").$type<string[]>().default([]).notNull(),
     position: smallint("position").default(0).notNull(),
     active: boolean("active").default(true).notNull(),
+    custom: boolean("custom").default(false).notNull(),
     ...timestamps,
   },
   (table) => [index("challenges_job_id_idx").on(table.jobId)],
@@ -335,6 +338,100 @@ export const coachMessagesRelations = relations(coachMessages, ({ one }) => ({
   }),
 }));
 
+export const seekerEmbeddings = pgTable(
+  "seeker_embeddings",
+  {
+    userId: uuid("user_id")
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    content: text("content").notNull(),
+    embedding: vector("embedding", { dimensions: 384 }).notNull(),
+    updatedAt: timestamps.updatedAt,
+  },
+  (table) => [
+    index("seeker_embeddings_embedding_idx").using(
+      "hnsw",
+      table.embedding.op("vector_cosine_ops"),
+    ),
+  ],
+);
+
+export const candidateMatches = pgTable(
+  "candidate_matches",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    jobId: uuid("job_id")
+      .references(() => jobs.id, { onDelete: "cascade" })
+      .notNull(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    score: smallint("score").notNull(),
+    skillMatch: smallint("skill_match").notNull(),
+    performance: smallint("performance").notNull(),
+    trajectory: smallint("trajectory").notNull(),
+    reasoning: text("reasoning"),
+    computedAt: timestamp("computed_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("candidate_matches_job_user_idx").on(table.jobId, table.userId),
+    index("candidate_matches_job_id_idx").on(table.jobId),
+  ],
+);
+
+export const inviteStatusEnum = pgEnum("invite_status", [
+  "pending",
+  "accepted",
+  "declined",
+]);
+
+export const invites = pgTable(
+  "invites",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    jobId: uuid("job_id")
+      .references(() => jobs.id, { onDelete: "cascade" })
+      .notNull(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    companyId: uuid("company_id")
+      .references(() => companies.id, { onDelete: "cascade" })
+      .notNull(),
+    message: text("message").notNull(),
+    salaryMin: integer("salary_min").notNull(),
+    salaryMax: integer("salary_max").notNull(),
+    matchScore: smallint("match_score"),
+    status: inviteStatusEnum("status").default("pending").notNull(),
+    declineReason: text("decline_reason"),
+    applicationId: uuid("application_id").references(() => applications.id, {
+      onDelete: "set null",
+    }),
+    respondedAt: timestamp("responded_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("invites_job_user_idx").on(table.jobId, table.userId),
+    index("invites_user_id_idx").on(table.userId),
+    index("invites_company_id_idx").on(table.companyId),
+  ],
+);
+
+export const invitesRelations = relations(invites, ({ one }) => ({
+  job: one(jobs, { fields: [invites.jobId], references: [jobs.id] }),
+  user: one(users, { fields: [invites.userId], references: [users.id] }),
+  company: one(companies, { fields: [invites.companyId], references: [companies.id] }),
+  application: one(applications, {
+    fields: [invites.applicationId],
+    references: [applications.id],
+  }),
+}));
+
+export const candidateMatchesRelations = relations(candidateMatches, ({ one }) => ({
+  job: one(jobs, { fields: [candidateMatches.jobId], references: [jobs.id] }),
+  user: one(users, { fields: [candidateMatches.userId], references: [users.id] }),
+}));
+
 export const usersRelations = relations(users, ({ one, many }) => ({
   seekerProfile: one(seekerProfiles, {
     fields: [users.id],
@@ -347,6 +444,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   submissions: many(submissions),
   skillScores: many(skillScores),
   applications: many(applications),
+  invites: many(invites),
 }));
 
 export const seekerProfilesRelations = relations(seekerProfiles, ({ one }) => ({

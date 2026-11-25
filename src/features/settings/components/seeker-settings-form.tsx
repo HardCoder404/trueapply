@@ -68,6 +68,23 @@ export function SeekerSettingsForm({
         />
       </Field>
 
+      <Field
+        id="preferredRoles"
+        label="Roles you want next"
+        optional
+        hint="Up to 5. Companies searching the talent pool match on these."
+        error={errors.preferredRoles?.[0]}
+      >
+        <TagInput
+          id="preferredRoles"
+          name="preferredRoles"
+          max={5}
+          placeholder="e.g. Senior Frontend Engineer"
+          defaultTags={profile?.preferredRoles ?? []}
+          describedBy="preferredRoles-hint"
+        />
+      </Field>
+
       <ChoiceGroup
         name="experienceLevel"
         label="Experience"
@@ -99,6 +116,22 @@ export function SeekerSettingsForm({
           defaultValue={profile?.bio ?? ""}
         />
       </Field>
+
+      <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
+        <input
+          type="checkbox"
+          name="discoverable"
+          defaultChecked={profile?.discoverable ?? true}
+          className="mt-0.5 size-5 shrink-0 accent-foreground"
+        />
+        <span>
+          <span className="block font-medium">Let companies discover me</span>
+          <span className="mt-0.5 block text-sm text-muted-foreground">
+            Shows your verified scores, level and preferred roles in the talent pool, with
+            your name hidden until you accept an invitation.
+          </span>
+        </span>
+      </label>
 
       <SaveRow state={state} pending={pending} />
     </form>

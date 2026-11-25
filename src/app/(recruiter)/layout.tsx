@@ -10,6 +10,8 @@ export default function RecruiterLayout({ children }: { children: ReactNode }) {
         links={[
           { href: "/recruiter/dashboard", label: "Overview" },
           { href: "/recruiter/jobs", label: "Roles" },
+          { href: "/recruiter/talent", label: "Talent" },
+          { href: "/recruiter/invites", label: "Invites" },
           { href: "/recruiter/settings", label: "Settings" },
         ]}
       />

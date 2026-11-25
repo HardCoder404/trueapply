@@ -117,3 +117,54 @@ export function nudgeEmail(input: {
     }),
   };
 }
+
+export function inviteEmail(input: {
+  seekerName: string;
+  companyName: string;
+  jobTitle: string;
+  salary: string;
+  message: string;
+}) {
+  const title = `${input.companyName} wants to interview you for ${input.jobTitle}`;
+  const paragraphs = [
+    `Hi ${input.seekerName.split(" ")[0]},`,
+    `${input.companyName} found your verified skills on TrueApply and is inviting you to interview for ${input.jobTitle}. The range they are offering is ${input.salary}.`,
+    `Why they think you are a match: "${input.message}"`,
+    "Your name stays hidden until you accept. Accepting opens an application straight at the interview stage; declining is one click and they see your reason.",
+  ];
+  return {
+    subject: title,
+    ...layout(title, paragraphs, {
+      label: "See the invitation",
+      path: "/seeker/invites",
+    }),
+  };
+}
+
+export function inviteRespondedEmail(input: {
+  recruiterName: string;
+  seekerName: string;
+  jobTitle: string;
+  jobId: string;
+  accepted: boolean;
+  reason: string | null;
+}) {
+  const title = input.accepted
+    ? `${input.seekerName} accepted your interview invitation for ${input.jobTitle}`
+    : `A candidate declined your invitation for ${input.jobTitle}`;
+  const paragraphs = [
+    `Hi ${input.recruiterName.split(" ")[0]},`,
+    input.accepted
+      ? `${input.seekerName} accepted. Their identity is now visible and they sit at the Interview stage in your pipeline for ${input.jobTitle}.`
+      : `The candidate you invited for ${input.jobTitle} declined.${input.reason ? ` Their reason: "${input.reason}"` : ""}`,
+  ];
+  return {
+    subject: title,
+    ...layout(title, paragraphs, {
+      label: input.accepted ? "Open the pipeline" : "Browse more talent",
+      path: input.accepted
+        ? `/recruiter/jobs/${input.jobId}/applicants`
+        : "/recruiter/talent",
+    }),
+  };
+}

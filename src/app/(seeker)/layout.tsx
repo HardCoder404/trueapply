@@ -11,6 +11,7 @@ export default function SeekerLayout({ children }: { children: ReactNode }) {
           { href: "/seeker/dashboard", label: "Overview" },
           { href: "/jobs", label: "Jobs" },
           { href: "/seeker/applications", label: "Applications" },
+          { href: "/seeker/invites", label: "Invites" },
           { href: "/seeker/coach", label: "Coach" },
           { href: "/seeker/settings", label: "Settings" },
         ]}

@@ -19,19 +19,14 @@ export const metadata: Metadata = {
 
 const upcoming = [
   {
-    phase: "03",
-    title: "Skill challenges",
-    body: "Each role gets AI-generated challenges so applicants arrive with proof, not claims.",
+    phase: "07",
+    title: "Pipeline analytics",
+    body: "Time to first response, where candidates drop off and how your roles compare.",
   },
   {
-    phase: "04",
-    title: "Ranked applicants",
-    body: "Candidates sorted by verified skill score, with AI feedback attached.",
-  },
-  {
-    phase: "06",
-    title: "Reverse hiring",
-    body: "Browse anonymous, proven candidates and invite them to interview.",
+    phase: "08",
+    title: "Launch polish",
+    body: "Accessibility pass, performance budget and the public launch.",
   },
 ];
 
@@ -68,6 +63,9 @@ async function RecruiterDashboard() {
           </Button>
           <Button asChild variant="outline" className="h-11 px-5 text-sm">
             <Link href="/recruiter/jobs">Manage roles</Link>
+          </Button>
+          <Button asChild variant="outline" className="h-11 px-5 text-sm">
+            <Link href="/recruiter/talent">Browse talent</Link>
           </Button>
         </div>
       </div>
@@ -136,7 +134,7 @@ async function RecruiterDashboard() {
         >
           Coming next
         </h2>
-        <div className="mt-4 grid gap-px overflow-hidden rounded-xl bg-border sm:grid-cols-3">
+        <div className="mt-4 grid gap-px overflow-hidden rounded-xl bg-border sm:grid-cols-2">
           {upcoming.map((item) => (
             <article key={item.phase} className="flex flex-col gap-3 bg-background p-5">
               <span className="font-mono text-xs text-muted-foreground">

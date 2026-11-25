@@ -8,6 +8,7 @@ import { z } from "zod";
 import { getDb } from "@/db";
 import { companies, seekerProfiles, users } from "@/db/schema";
 import { getCurrentUser } from "@/features/auth/queries";
+import { syncSeekerIndex } from "@/features/talent/index-seekers";
 
 import { recruiterSettingsSchema, seekerSettingsSchema } from "./schemas";
 
@@ -47,6 +48,10 @@ export async function saveSeekerSettings(
     skills: formData.getAll("skills").filter((s): s is string => typeof s === "string"),
     location: text(formData, "location"),
     experienceLevel: text(formData, "experienceLevel"),
+    preferredRoles: formData
+      .getAll("preferredRoles")
+      .filter((s): s is string => typeof s === "string"),
+    discoverable: formData.get("discoverable") === "on",
   });
   if (!parsed.success) return { errors: z.flattenError(parsed.error).fieldErrors };
 
@@ -60,6 +65,7 @@ export async function saveSeekerSettings(
       .onConflictDoUpdate({ target: seekerProfiles.userId, set: profileValues(data) }),
   ]);
   if (data.name !== account.name) await syncClerkName(account.clerkId, data.name);
+  await syncSeekerIndex(account.id);
 
   revalidatePath("/seeker/dashboard");
   revalidatePath("/seeker/settings");
@@ -74,6 +80,8 @@ function profileValues(data: z.infer<typeof seekerSettingsSchema>) {
     skills: data.skills,
     location: data.location,
     experienceLevel: data.experienceLevel,
+    preferredRoles: data.preferredRoles,
+    discoverable: data.discoverable,
   };
 }
 

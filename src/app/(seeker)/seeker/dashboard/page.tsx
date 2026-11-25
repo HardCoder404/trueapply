@@ -12,6 +12,7 @@ import { StageBadge } from "@/features/applications/components/stage-badge";
 import { listSeekerApplications } from "@/features/applications/queries";
 import { SkillScoreList } from "@/features/challenges/components/skill-score-list";
 import { listUserSkillScores, listUserSubmissions } from "@/features/challenges/queries";
+import { countPendingInvites } from "@/features/talent/queries";
 import { requireRole } from "@/features/auth/queries";
 import { experienceLevelLabels } from "@/lib/constants";
 
@@ -27,11 +28,6 @@ const upcoming = [
     body: "Accessibility pass, performance budget and the public launch.",
   },
   {
-    phase: "06",
-    title: "Get discovered",
-    body: "Companies browse verified candidates and invite them to interview.",
-  },
-  {
     phase: "07",
     title: "Interview prep",
     body: "Mock interviews built from the role, with feedback on every answer.",
@@ -43,10 +39,11 @@ async function SeekerDashboard() {
   const profile = account.seekerProfile;
   const completion = seekerCompletion(profile);
   const firstName = account.name.split(" ")[0];
-  const [scores, recent, applications] = await Promise.all([
+  const [scores, recent, applications, pendingInvites] = await Promise.all([
     listUserSkillScores(account.id),
     listUserSubmissions(account.id, 5),
     listSeekerApplications(account.id),
+    countPendingInvites(account.id),
   ]);
 
   return (
@@ -60,6 +57,14 @@ async function SeekerDashboard() {
         </h1>
         {profile?.headline && (
           <p className="mt-2 text-muted-foreground">{profile.headline}</p>
+        )}
+        {pendingInvites > 0 && (
+          <p className="mt-2">
+            <Link href="/seeker/invites" className="underline underline-offset-4">
+              {pendingInvites} interview invitation{pendingInvites === 1 ? "" : "s"}{" "}
+              waiting for your answer
+            </Link>
+          </p>
         )}
         <div className="mt-6 flex flex-wrap gap-3">
           <Button asChild className="h-11 px-5 text-sm">
@@ -190,7 +195,7 @@ async function SeekerDashboard() {
         >
           Coming next
         </h2>
-        <div className="mt-4 grid gap-px overflow-hidden rounded-xl bg-border sm:grid-cols-3">
+        <div className="mt-4 grid gap-px overflow-hidden rounded-xl bg-border sm:grid-cols-2">
           {upcoming.map((item) => (
             <article key={item.phase} className="flex flex-col gap-3 bg-background p-5">
               <span className="font-mono text-xs text-muted-foreground">

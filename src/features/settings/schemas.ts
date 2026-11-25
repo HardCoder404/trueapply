@@ -18,6 +18,8 @@ export const seekerSettingsSchema = z.object({
   skills: z.array(z.string().trim().min(1).max(40)).max(20, "Keep it to 20 skills"),
   location: optionalText(80),
   experienceLevel: z.enum(experienceLevels, "Pick your experience level"),
+  preferredRoles: z.array(z.string().trim().min(1).max(60)).max(5, "Keep it to 5 roles"),
+  discoverable: z.boolean(),
 });
 
 export const recruiterSettingsSchema = z.object({

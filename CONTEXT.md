@@ -1,8 +1,8 @@
 # TrueApply — Session Context (Save Point)
 
 > Last updated: November 25, 2026
-> Phase: 5 — AI Career Coach + RAG → DONE & LIVE-TESTED 25 Nov 2026
-> Next: Phase 6 — Reverse Hiring & Matching Engine
+> Phase: 6 — Reverse Hiring & Matching Engine → DONE & LIVE-TESTED 25 Nov 2026
+> Next: Phase 7 — Analytics & Polish
 
 ---
 
@@ -33,11 +33,31 @@ Verification: lint 0 · type-check 0 · build OK · live: three questions in one
 - Hooks: publish/rescore → `indexJobById`; close/archive/expire → `removeJobIndex`. Seeker nav has Coach; dashboard has "Ask the coach".
 - Gotchas: (1) `router.replace()`/`router.refresh()` fired from the chat after streaming left `/seeker/coach/[id]` stuck on its Suspense skeleton (link navigation and full loads are fine) → the chat never calls the router; URL is swapped with `history.replaceState` and the sidebar updates through the client store. (2) Dev server once entered a "[Fast Refresh] rebuilding" loop (every page reloading) → restart `next dev`; model cache was moved out of node_modules as a precaution. Not yet exercised live: the 429 path after 40 messages/day (counter display verified), and a real Vercel deploy of the coach function (bundle traced and sizes checked: 44 MB runtime + 34 MB model, under the 250 MB limit). (3) Playwright: hidden phone copy of the sidebar comes first in DOM, scope to `aside div.lg\:block`.
 
-### Phase 6 — Next Steps
-1. Anonymous candidate profiles for recruiters: `/recruiter/discover` lists seekers with verified scores (no name/handle until they accept), filters by skill/score/level/location.
-2. Matching: embed seeker profiles (headline + skills + verified scores) into a `seeker_embeddings` table; "best matches" for a job = cosine over skills + score weighting; "roles for you" on the seeker dashboard.
-3. Interview invites: `invites` table (recruiter → seeker, job, message); seeker accepts → application created at `shortlisted`; email both sides.
-4. Seeker privacy toggle in settings (discoverable yes/no).
+### Phase 7 — Next Steps
+1. Seeker analytics on `/seeker/dashboard` (or `/seeker/insights`): application success rate, skill score history chart (needs a `skill_score_history` table or derive from `submissions`), market demand per skill (reuse `get_skill_trends` SQL), percentile ("your React is top 20%") from `skill_scores`.
+2. Recruiter analytics `/recruiter/analytics`: time to first response, pipeline conversion per stage (from `application_events`), candidate quality (mean applicant score), invite acceptance rate (from `invites`).
+3. Admin dashboard `/admin` behind an allow-list of Clerk ids in env: totals, Reality Score distribution, cron health (last run timestamps → add a `cron_runs` table).
+4. Performance: index audit, `"use cache"` on the public board and job pages with tag revalidation, OG images for `/jobs/[slug]` and `/u/[handle]`, Lighthouse ≥90 on phone, loading/error files for every route group.
+
+---
+
+## Phase 6 — Built 25 Nov 2026 (reverse hiring, matching engine)
+
+Verification: lint 0 · type-check 0 · build OK · live: seeker set preferred roles + discoverable, recruiter saw an anonymous card ("Candidate 3066", no name anywhere), semantic search by description worked, "Rank candidates" produced a scored list with Groq reasoning, invite form pre-filled salary from the role and message from the reasoning, duplicate invite refused, seeker got the invite on dashboard + `/seeker/invites`, accepted → application created at Interview with two timeline events, recruiter invites page switched to the real name + pipeline link, applicants page shows Interview; second invite declined with a reason the recruiter can read; discoverable off removed the seeker from the pool and on restored them; custom brief appeared on the job page and the public challenges page (for seekers); rubric validation; no overflow at 375 on talent/matches/invites; app header nav now scrolls on phones instead of overlapping the wordmark.
+
+### Decisions (differ from ROADMAP's suggestions)
+- Matching is deterministic first, AI second: `score = 0.5 × skill match + 0.3 × challenge performance + 0.2 × trajectory` (trajectory = 0.4 seeker↔job embedding similarity + 0.4 experience-level fit vs level inferred from the title + 0.2 preferred-role overlap). Groq (`completeJson`) only writes the 2–3 sentence "fit" for the top 8; if Groq is down the ranking still works with no reasoning.
+- Accepting an invite creates the application directly at `interview` (not `shortlisted`): the recruiter already decided to interview. `firstResponseAt` is set so the company's response stats are not penalised.
+- Identity reveal is implicit: the application row makes the seeker visible in Applicants; `/recruiter/invites` shows the name only when `status = accepted`.
+- Challenge Briefs (roadmap "optional premium") are built as plain custom challenges with `custom = true`; regeneration never touches them; the fast-track is the "Invite to interview" button on the submissions page.
+
+### What exists
+- Schema (migration `0006_reverse_hiring`): `seeker_profiles.preferred_roles text[]`, `seeker_profiles.discoverable bool`, `challenges.custom bool`, `seeker_embeddings` (userId PK, vector(384), hnsw), `candidate_matches` (jobId+userId unique, score, skillMatch, performance, trajectory, reasoning, computedAt), `invites` (jobId+userId unique, companyId, message, salaryMin/Max, matchScore, status enum pending/accepted/declined, declineReason, applicationId, respondedAt).
+- `src/features/talent/`: `anonymous.ts` (`candidateLabel` = "Candidate " + 4 hex of sha1(userId)), `index-seekers.ts` (`syncSeekerIndex(userId)` best effort, `reindexSeekers()`; only discoverable seekers with ≥1 verified skill are embedded), `matching.ts` (`inferLevel`, `scoreCandidate`, `rankCandidatesForJob`: pool = top 40 by similarity excluding applicants, keep 12, explain 8), `schemas.ts` (talent filters, invite, respond, brief), `queries.ts` (`listTalent` with SQL aggregates + optional vector order, `getCandidate`, `listJobMatches`, `listCompanyInvites`, `listSeekerInvites`, `countPendingInvites`, `getSeekerInvite`, `getMatchReasoning`), `actions.ts` (`sendInvite`, `respondToInvite`, `rankCandidates`, `createBrief`), components (candidate-card, talent-filters, invite-form [client, salary follows the chosen role], invite-card [accept / decline-with-reason via `<details>`], match-factors, brief-form).
+- Routes: `/recruiter/talent` (filters q/skill/min/level/location, 20 per page), `/recruiter/talent/[id]?job=` (anonymous profile + invite form, prior invites), `/recruiter/invites`, `/recruiter/jobs/[id]/matches` (Rank / Refresh ranking button, ranked list, Invite buttons, Invited badges), `/recruiter/jobs/[id]/challenges/new` (brief), `/seeker/invites`.
+- Hooks: settings save → `syncSeekerIndex`; `recordSkillScore` → `syncSeekerIndex`; weekly cron `/api/cron/reindex-jobs` now returns `{jobs, seekers}`. Emails: `inviteEmail` (seeker) and `inviteRespondedEmail` (recruiter).
+- Nav: recruiter Overview/Roles/Talent/Invites/Settings; seeker Overview/Jobs/Applications/Invites/Coach/Settings. Dashboards: "Browse talent" button, pending-invite line for seekers, "Coming next" cards now 07/08 for both roles. Job page: "Find matches" + "Add a brief". Submissions page: "Invite to interview" per candidate.
+- Gotchas: (1) `app-header` left block must stay `shrink-0` so the nav scrolls on phones. (2) Playwright: after a server-action redirect the old `main` lingers, so counts on `main ul li` double up; scope with `page.locator("main", has_text=…)`. (3) The public `/jobs/[slug]/challenges` page refuses recruiters by design; test briefs as a seeker.
 
 ---
 
@@ -225,6 +245,6 @@ Next.js API routes + Server Actions instead of Turborepo + FastAPI. Deploys enti
 | 3 | Skill Verification System | DONE 25 Nov 2026 (Groq, browser JS runner) |
 | 4 | Application Pipeline & Transparency | DONE 25 Nov 2026 (SSE + Resend) |
 | 5 | AI Career Coach + RAG Pipeline | DONE 25 Nov 2026 (pgvector + local embeddings + Groq tools) |
-| 6 | Reverse Hiring & Matching Engine | Not started |
+| 6 | Reverse Hiring & Matching Engine | DONE 25 Nov 2026 (anonymous talent pool, deterministic + Groq-explained matching, invites, briefs) |
 | 7 | Analytics & Polish | Not started |
 | 8 | Testing & Deployment | Not started |

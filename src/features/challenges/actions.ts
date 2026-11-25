@@ -9,6 +9,7 @@ import { z } from "zod";
 import { getDb } from "@/db";
 import { challenges, skillScores, submissions } from "@/db/schema";
 import { getCurrentUser } from "@/features/auth/queries";
+import { syncSeekerIndex } from "@/features/talent/index-seekers";
 import { getCompanyJob } from "@/features/jobs/queries";
 import { GroqUnavailableError } from "@/lib/ai/groq";
 
@@ -69,9 +70,11 @@ export async function regenerateChallenges(formData: FormData) {
     await db
       .update(challenges)
       .set({ active: false })
-      .where(eq(challenges.jobId, job.id));
+      .where(and(eq(challenges.jobId, job.id), eq(challenges.custom, false)));
   } else {
-    await db.delete(challenges).where(eq(challenges.jobId, job.id));
+    await db
+      .delete(challenges)
+      .where(and(eq(challenges.jobId, job.id), eq(challenges.custom, false)));
   }
   await createChallengesForJob(job);
 
@@ -113,6 +116,7 @@ async function recordSkillScore(
         verifiedAt: sql`now()`,
       },
     });
+  await syncSeekerIndex(userId);
 }
 
 async function gradeAndStore(

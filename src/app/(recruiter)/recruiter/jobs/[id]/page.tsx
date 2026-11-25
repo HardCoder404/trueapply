@@ -73,6 +73,11 @@ async function ManageJob({ params }: Pick<ManageJobPageProps, "params">) {
               </span>
             </Link>
           </Button>
+          {job.status === "open" && (
+            <Button asChild variant="outline" className="h-11 px-5 text-sm">
+              <Link href={`/recruiter/jobs/${job.id}/matches`}>Find matches</Link>
+            </Button>
+          )}
           {job.status !== "archived" && (
             <Button asChild variant="outline" className="h-11 px-5 text-sm">
               <Link href={`/recruiter/jobs/${job.id}/edit`}>Edit</Link>
@@ -123,6 +128,13 @@ async function ManageJob({ params }: Pick<ManageJobPageProps, "params">) {
                 <Button asChild variant="ghost" size="sm">
                   <Link href={`/recruiter/jobs/${job.id}/submissions`}>
                     Review submissions
+                  </Link>
+                </Button>
+              )}
+              {job.status !== "archived" && (
+                <Button asChild variant="ghost" size="sm">
+                  <Link href={`/recruiter/jobs/${job.id}/challenges/new`}>
+                    Add a brief
                   </Link>
                 </Button>
               )}
