@@ -158,10 +158,17 @@ export const challenges = pgTable(
     starterCode: text("starter_code"),
     rubric: jsonb("rubric").$type<string[]>().default([]).notNull(),
     position: smallint("position").default(0).notNull(),
+    active: boolean("active").default(true).notNull(),
     ...timestamps,
   },
   (table) => [index("challenges_job_id_idx").on(table.jobId)],
 );
+
+export type IntegritySignals = {
+  pasteAttempts: number;
+  tabSwitches: number;
+  activeSeconds: number;
+};
 
 export type EvaluationBreakdown = {
   correctness: number;
@@ -188,6 +195,7 @@ export const submissions = pgTable(
     score: smallint("score"),
     feedback: text("feedback"),
     breakdown: jsonb("breakdown").$type<EvaluationBreakdown>(),
+    integrity: jsonb("integrity").$type<IntegritySignals>(),
     startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
     createdAt: timestamps.createdAt,

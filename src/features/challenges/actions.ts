@@ -15,7 +15,7 @@ import { GroqUnavailableError } from "@/lib/ai/groq";
 import { evaluateSubmission } from "./evaluator";
 import { generateChallenges } from "./generator";
 import { countJobSubmissions, getChallenge, getSubmission } from "./queries";
-import { submissionSchema } from "./schemas";
+import { integritySchema, submissionSchema } from "./schemas";
 
 export type SubmissionState = {
   errors?: Record<string, string[] | undefined>;
@@ -27,6 +27,15 @@ const graceMs = 60_000;
 function text(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value : "";
+}
+
+function parseIntegrity(raw: string) {
+  try {
+    const parsed = integritySchema.safeParse(JSON.parse(raw));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
 }
 
 async function seekerAccount() {
@@ -55,9 +64,15 @@ export async function regenerateChallenges(formData: FormData) {
   const job = company ? await getCompanyJob(text(formData, "jobId"), company.id) : null;
   if (!job || job.status === "archived") return;
 
-  if ((await countJobSubmissions(job.id)) > 0) return;
-
-  await getDb().delete(challenges).where(eq(challenges.jobId, job.id));
+  const db = getDb();
+  if ((await countJobSubmissions(job.id)) > 0) {
+    await db
+      .update(challenges)
+      .set({ active: false })
+      .where(eq(challenges.jobId, job.id));
+  } else {
+    await db.delete(challenges).where(eq(challenges.jobId, job.id));
+  }
   await createChallengesForJob(job);
 
   revalidatePath(`/recruiter/jobs/${job.id}`);
@@ -68,7 +83,8 @@ export async function regenerateChallenges(formData: FormData) {
 export async function startChallenge(formData: FormData) {
   const account = await seekerAccount();
   const challenge = await getChallenge(text(formData, "challengeId"));
-  if (!account || !challenge || challenge.job.status !== "open") return;
+  if (!account || !challenge || !challenge.active || challenge.job.status !== "open")
+    return;
 
   const existing = await getSubmission(challenge.id, account.id);
   if (!existing) {
@@ -167,6 +183,7 @@ export async function submitChallenge(
       status: "submitted",
       code: parsed.data.answer,
       runOutput,
+      integrity: parseIntegrity(text(formData, "integrity")),
       submittedAt: new Date(),
     })
     .where(eq(submissions.id, submission.id));

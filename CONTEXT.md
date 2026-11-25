@@ -26,7 +26,12 @@ Verification: lint 0 · type-check 0 · build OK · live: recruiter generated 3 
 - Routes: `/jobs/[slug]/challenges` (signed-in seeker; recruiters get a notice), `/challenges/[id]` (take; AppHeader "Challenge"), `/challenges/[id]/result`, public `/u/[handle]` portfolio (generateMetadata, filled = verified / outlined = claimed). `PublicShell` layout shared by /jobs and /u.
 - Hooks: publishing a job (saveJob publish or publishJob) auto-generates challenges if none exist (Groq failure is swallowed; recruiter can hit "Generate challenges" on the manage page). Recruiter manage page lists challenges + attempt count. Seeker dashboard shows verified badges with scores, recent challenges, portfolio link.
 - Sandbox decision: Piston's public API went whitelist-only (Feb 2026), so v1 runs plain JavaScript in a browser Web Worker (console capture, no DOM/imports) and sends the output to the grader as evidence. TypeScript/Python/written tasks are graded from source only. Self-hosted Piston or Judge0 is the upgrade path.
-- Not done: Monaco editor (plain textarea for now), proctoring/anti-paste, challenge regeneration after attempts exist, recruiter view of individual submissions (Phase 4).
+- Editor: CodeMirror 6 (`@uiw/react-codemirror`, loaded client-only via next/dynamic) with a monochrome `HighlightStyle` (weights/opacity only, no colours), JS/TS/JSX + Python modes, line wrapping. Written answers stay a textarea.
+- Integrity signals: paste and drop are blocked in the editor and textarea (attempts counted), tab switches counted via `visibilitychange`, active seconds computed excluding hidden time; sent as `integrity` JSON in the form action (set inside the client `action` wrapper, so no impure reads during render) and stored on `submissions.integrity`. Recruiter sees them per submission; >0 pastes or >3 tab switches shows a dashed "Check" chip.
+- Recruiter review: `/recruiter/jobs/[id]/submissions` groups attempts by candidate (ranked by best score), each expandable to the grader breakdown, feedback, integrity, code and run output; linked from the manage page once attempts exist.
+- Regeneration after attempts: old challenges are set `active = false` (retired) instead of deleted; seeker list shows active ones plus any retired ones they attempted (labelled); scores stay intact. With zero attempts, old rows are deleted.
+- Settings: `/seeker/settings` (name, headline, skills, experience, location, bio → users + seekerProfiles upsert, syncs first/last name to Clerk) and `/recruiter/settings` (name, company name, size, industry; domain read-only so the verified mark cannot be gamed). "Settings" in both app headers; profile-completion card links to it.
+- Migration `0003` applied: `challenges.active`, `submissions.integrity`.
 
 ### Phase 4 — Next Steps
 1. Apply: `/jobs/[slug]/apply` requires ≥1 evaluated challenge for that job; creates `applications` row with the aggregate skill score snapshot.
@@ -49,7 +54,7 @@ Verification: lint 0 · type-check 0 · build OK (19 routes) · live: recruiter 
 - Routes: `/jobs` (public, filters via searchParams inside Suspense), `/jobs/[slug]` (generateMetadata + JSON-LD JobPosting, sticky score aside), `/recruiter/jobs`, `/recruiter/jobs/new`, `/recruiter/jobs/[id]` (publish/close/edit), `/recruiter/jobs/[id]/edit`, `GET /api/cron/expire-jobs` (Bearer `CRON_SECRET`; `vercel.json` cron daily 03:00). Sitemap is dynamic and includes open jobs.
 - Shared form bits moved to `src/components/forms/` (field, tag-input with `defaultTags`, choice-group). `AppHeader` takes `links`; recruiter nav Overview/Roles, seeker Overview/Jobs. Landing `SiteHeader` uses Clerk `<Show>` inside Suspense to swap Sign in/Get started for Dashboard + avatar.
 - Gotchas learned: any `new Date()` in a dynamic component must come after `await connection()` (next/server) or Next flags it; `db` must not be cached on `globalThis` in dev (stale schema after HMR) — it's module-level now.
-- Not done from the Phase 2 list: profile/company settings page (deferred), Upstash rate limiting (DB count used instead), nonce CSP.
+- Rate limiting is a DB count (10 posts/day/company); CSP is static (no nonce) because Clerk + Turbopack inject inline scripts; settings pages landed in Phase 3.
 
 ### Phase 3 — Next Steps
 1. Challenge generator: on publish (or on demand) call Groq to create 2–3 role-specific micro-challenges per job → `challenges` table (type from role, difficulty, time limit).

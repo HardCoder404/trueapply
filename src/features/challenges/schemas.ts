@@ -34,6 +34,12 @@ export const evaluation = z.object({
   gaps: z.array(z.string().max(160)).max(4),
 });
 
+export const integritySchema = z.object({
+  pasteAttempts: z.number().int().min(0).max(10_000),
+  tabSwitches: z.number().int().min(0).max(10_000),
+  activeSeconds: z.number().int().min(0).max(100_000),
+});
+
 export const submissionSchema = z.object({
   answer: z
     .string()

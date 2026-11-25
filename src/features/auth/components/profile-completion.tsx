@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import type { Completion } from "../profile-completion";
 
 export function ProfileCompletion({ completion }: { completion: Completion }) {
@@ -36,8 +38,14 @@ export function ProfileCompletion({ completion }: { completion: Completion }) {
 
       <p className="mt-4 text-sm text-muted-foreground">
         {complete
-          ? "Everything is filled in."
-          : `Still missing: ${completion.missing.join(", ")}.`}
+          ? "Everything is filled in. "
+          : `Still missing: ${completion.missing.join(", ")}. `}
+        <Link
+          href="/seeker/settings"
+          className="text-foreground underline underline-offset-4"
+        >
+          {complete ? "Edit profile" : "Fill it in"}
+        </Link>
       </p>
     </section>
   );

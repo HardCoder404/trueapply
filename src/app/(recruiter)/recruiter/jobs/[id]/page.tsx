@@ -108,14 +108,23 @@ async function ManageJob({ params }: Pick<ManageJobPageProps, "params">) {
             <h2 className="font-mono text-xs tracking-wide text-muted-foreground uppercase">
               Challenges · {submissionCount} attempt{submissionCount === 1 ? "" : "s"}
             </h2>
-            {job.status !== "archived" && submissionCount === 0 && (
-              <form action={regenerateChallenges}>
-                <input type="hidden" name="jobId" value={job.id} />
-                <Button type="submit" variant="outline" size="sm">
-                  {challenges.length ? "Regenerate" : "Generate challenges"}
+            <div className="flex items-center gap-2">
+              {submissionCount > 0 && (
+                <Button asChild variant="ghost" size="sm">
+                  <Link href={`/recruiter/jobs/${job.id}/submissions`}>
+                    Review submissions
+                  </Link>
                 </Button>
-              </form>
-            )}
+              )}
+              {job.status !== "archived" && (
+                <form action={regenerateChallenges}>
+                  <input type="hidden" name="jobId" value={job.id} />
+                  <Button type="submit" variant="outline" size="sm">
+                    {challenges.length ? "Regenerate" : "Generate challenges"}
+                  </Button>
+                </form>
+              )}
+            </div>
           </div>
           {challenges.length ? (
             <ol className="mt-4 divide-y rounded-xl ring-1 ring-foreground/10">

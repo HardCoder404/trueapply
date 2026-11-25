@@ -1,12 +1,25 @@
 "use client";
 
 import { ArrowRight, Play } from "lucide-react";
-import { useActionState, useState, type KeyboardEvent } from "react";
+import dynamic from "next/dynamic";
+import {
+  useActionState,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ClipboardEvent,
+} from "react";
 
 import { Button } from "@/components/ui/button";
 
 import { submitChallenge, type SubmissionState } from "../actions";
 import { runJavascript } from "./run-javascript";
+
+const CodeEditor = dynamic(() => import("./code-editor").then((m) => m.CodeEditor), {
+  ssr: false,
+  loading: () => <div className="min-h-[26rem] motion-safe:animate-pulse" aria-hidden />,
+});
 
 type SubmissionFormProps = {
   challengeId: string;
@@ -26,8 +39,57 @@ export function SubmissionForm({
   const [answer, setAnswer] = useState(starterCode ?? "");
   const [runOutput, setRunOutput] = useState("");
   const [running, setRunning] = useState(false);
+  const [pasteNotice, setPasteNotice] = useState(false);
+  const integrity = useRef({
+    pasteAttempts: 0,
+    tabSwitches: 0,
+    hiddenSince: 0,
+    hiddenMs: 0,
+    openedAt: 0,
+  });
   const canRun = language === "javascript";
   const isCode = language !== null;
+
+  useEffect(() => {
+    integrity.current.openedAt = Date.now();
+    const onVisibility = () => {
+      const now = Date.now();
+      if (document.hidden) {
+        integrity.current.tabSwitches += 1;
+        integrity.current.hiddenSince = now;
+      } else if (integrity.current.hiddenSince) {
+        integrity.current.hiddenMs += now - integrity.current.hiddenSince;
+        integrity.current.hiddenSince = 0;
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
+
+  const onPasteBlocked = useCallback(() => {
+    integrity.current.pasteAttempts += 1;
+    setPasteNotice(true);
+  }, []);
+
+  function blockPaste(event: ClipboardEvent<HTMLTextAreaElement>) {
+    event.preventDefault();
+    onPasteBlocked();
+  }
+
+  function submitWithSignals(formData: FormData) {
+    const { pasteAttempts, tabSwitches, hiddenMs, openedAt } = integrity.current;
+    formData.set(
+      "integrity",
+      JSON.stringify({
+        pasteAttempts,
+        tabSwitches,
+        activeSeconds: openedAt
+          ? Math.max(0, Math.round((Date.now() - openedAt - hiddenMs) / 1000))
+          : 0,
+      }),
+    );
+    formAction(formData);
+  }
 
   async function run() {
     setRunning(true);
@@ -35,20 +97,8 @@ export function SubmissionForm({
     setRunning(false);
   }
 
-  function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key !== "Tab" || !isCode) return;
-    event.preventDefault();
-    const target = event.currentTarget;
-    const { selectionStart, selectionEnd } = target;
-    const next = `${answer.slice(0, selectionStart)}  ${answer.slice(selectionEnd)}`;
-    setAnswer(next);
-    requestAnimationFrame(() =>
-      target.setSelectionRange(selectionStart + 2, selectionStart + 2),
-    );
-  }
-
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={submitWithSignals} className="space-y-4">
       <input type="hidden" name="challengeId" value={challengeId} />
       <input type="hidden" name="runOutput" value={runOutput} />
 
@@ -70,18 +120,40 @@ export function SubmissionForm({
             </Button>
           )}
         </div>
+        {isCode ? (
+          <CodeEditor
+            value={answer}
+            language={language}
+            onChange={setAnswer}
+            onPasteBlocked={onPasteBlocked}
+          />
+        ) : (
+          <textarea
+            value={answer}
+            onChange={(event) => setAnswer(event.target.value)}
+            onPaste={blockPaste}
+            aria-label="Your answer"
+            rows={14}
+            className="block w-full resize-y bg-background p-4 text-sm leading-relaxed outline-none"
+            placeholder="Write your answer here."
+          />
+        )}
         <textarea
           name="answer"
           value={answer}
-          onChange={(event) => setAnswer(event.target.value)}
-          onKeyDown={onKeyDown}
-          spellCheck={!isCode}
-          aria-label="Your answer"
-          rows={isCode ? 22 : 14}
-          className={`block w-full resize-y bg-background p-4 text-sm leading-relaxed outline-none ${isCode ? "font-mono" : ""}`}
-          placeholder={isCode ? "// Your solution" : "Write your answer here."}
+          readOnly
+          hidden
+          aria-hidden
+          tabIndex={-1}
         />
       </div>
+
+      {pasteNotice && (
+        <p className="text-xs text-muted-foreground">
+          Pasting is off during a challenge. Type your answer; the company can see paste
+          attempts.
+        </p>
+      )}
 
       {canRun && runOutput && (
         <pre className="max-h-48 overflow-auto rounded-lg bg-card p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap ring-1 ring-foreground/10">

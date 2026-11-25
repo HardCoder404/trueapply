@@ -6,7 +6,7 @@ import { challenges, skillScores, submissions, users } from "@/db/schema";
 
 export async function listJobChallenges(jobId: string) {
   return getDb().query.challenges.findMany({
-    where: eq(challenges.jobId, jobId),
+    where: and(eq(challenges.jobId, jobId), eq(challenges.active, true)),
     orderBy: [asc(challenges.position)],
   });
 }
@@ -27,23 +27,71 @@ export const getSubmission = cache(async (challengeId: string, userId: string) =
 });
 
 export async function submissionsForJob(jobId: string, userId: string) {
-  const jobChallenges = await listJobChallenges(jobId);
-  if (!jobChallenges.length) return { challenges: jobChallenges, byChallenge: new Map() };
+  const allChallenges = await getDb().query.challenges.findMany({
+    where: eq(challenges.jobId, jobId),
+    orderBy: [
+      desc(challenges.active),
+      asc(challenges.createdAt),
+      asc(challenges.position),
+    ],
+  });
+  if (!allChallenges.length) return { challenges: allChallenges, byChallenge: new Map() };
 
   const rows = await getDb().query.submissions.findMany({
     where: and(
       eq(submissions.userId, userId),
       inArray(
         submissions.challengeId,
-        jobChallenges.map((c) => c.id),
+        allChallenges.map((c) => c.id),
       ),
     ),
   });
+  const byChallenge = new Map(rows.map((row) => [row.challengeId, row]));
+  const visible = allChallenges.filter((c) => c.active || byChallenge.has(c.id));
 
-  return {
-    challenges: jobChallenges,
-    byChallenge: new Map(rows.map((row) => [row.challengeId, row])),
-  };
+  return { challenges: visible, byChallenge };
+}
+
+export async function listJobSubmissions(jobId: string) {
+  const db = getDb();
+  const rows = await db.query.submissions.findMany({
+    where: inArray(
+      submissions.challengeId,
+      db
+        .select({ id: challenges.id })
+        .from(challenges)
+        .where(eq(challenges.jobId, jobId)),
+    ),
+    with: {
+      challenge: {
+        columns: {
+          id: true,
+          title: true,
+          skill: true,
+          language: true,
+          active: true,
+          rubric: true,
+        },
+      },
+      user: {
+        columns: { id: true, name: true, handle: true },
+        with: { seekerProfile: { columns: { headline: true } } },
+      },
+    },
+    orderBy: [desc(submissions.startedAt)],
+  });
+
+  type Row = (typeof rows)[number];
+  const byUser = new Map<string, { user: Row["user"]; submissions: Row[] }>();
+  for (const row of rows) {
+    const entry = byUser.get(row.userId) ?? { user: row.user, submissions: [] };
+    entry.submissions.push(row);
+    byUser.set(row.userId, entry);
+  }
+
+  const best = (list: Row[]) =>
+    list.reduce((max, row) => Math.max(max, row.score ?? -1), -1);
+  return [...byUser.values()].sort((a, b) => best(b.submissions) - best(a.submissions));
 }
 
 export async function countJobSubmissions(jobId: string) {
