@@ -2,13 +2,25 @@ import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV === "development";
 
+function clerkFrontendApi() {
+  const key = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  if (!key) return "https://*.clerk.accounts.dev";
+  const encoded = key.split("_").at(-1) ?? "";
+  const host = Buffer.from(encoded, "base64").toString("utf8").replace(/\$$/, "");
+  return host ? `https://${host}` : "https://*.clerk.accounts.dev";
+}
+
+const clerkApi = clerkFrontendApi();
+
 const contentSecurityPolicy = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} ${clerkApi} https://challenges.cloudflare.com https://*.protect.clerk.com`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https:",
+  "img-src 'self' data: blob: https://img.clerk.com",
   "font-src 'self' data:",
-  `connect-src 'self'${isDev ? " ws: wss:" : ""}`,
+  `connect-src 'self' ${clerkApi} https://*.protect.clerk.com:* https://clerk-telemetry.com${isDev ? " ws: wss:" : ""}`,
+  "worker-src 'self' blob:",
+  `frame-src 'self' https://challenges.cloudflare.com https://*.protect.clerk.com`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -39,7 +51,7 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   images: {
     formats: ["image/avif", "image/webp"],
-    remotePatterns: [],
+    remotePatterns: [{ protocol: "https", hostname: "img.clerk.com" }],
   },
   turbopack: {
     rules: {

@@ -17,6 +17,7 @@ import {
   challengeDifficulties,
   challengeTypes,
   companySizes,
+  experienceLevels,
   jobStatuses,
   userRoles,
 } from "@/lib/constants";
@@ -29,6 +30,7 @@ export const challengeDifficultyEnum = pgEnum(
   "challenge_difficulty",
   challengeDifficulties,
 );
+export const experienceLevelEnum = pgEnum("experience_level", experienceLevels);
 export const applicationStageEnum = pgEnum("application_stage", applicationStages);
 
 const timestamps = {
@@ -43,12 +45,33 @@ export const users = pgTable(
   "users",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    clerkId: text("clerk_id").notNull(),
     email: text("email").notNull(),
     name: text("name").notNull(),
     role: userRoleEnum("role").notNull(),
     ...timestamps,
   },
-  (table) => [uniqueIndex("users_email_idx").on(table.email)],
+  (table) => [
+    uniqueIndex("users_clerk_id_idx").on(table.clerkId),
+    uniqueIndex("users_email_idx").on(table.email),
+  ],
+);
+
+export const seekerProfiles = pgTable(
+  "seeker_profiles",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    headline: text("headline"),
+    bio: text("bio"),
+    skills: text("skills").array().default([]).notNull(),
+    location: text("location"),
+    experienceLevel: experienceLevelEnum("experience_level"),
+    ...timestamps,
+  },
+  (table) => [uniqueIndex("seeker_profiles_user_id_idx").on(table.userId)],
 );
 
 export const companies = pgTable(
@@ -174,6 +197,10 @@ export const applications = pgTable(
 );
 
 export const usersRelations = relations(users, ({ one, many }) => ({
+  seekerProfile: one(seekerProfiles, {
+    fields: [users.id],
+    references: [seekerProfiles.userId],
+  }),
   company: one(companies, {
     fields: [users.id],
     references: [companies.userId],
@@ -181,6 +208,10 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   submissions: many(submissions),
   skillScores: many(skillScores),
   applications: many(applications),
+}));
+
+export const seekerProfilesRelations = relations(seekerProfiles, ({ one }) => ({
+  user: one(users, { fields: [seekerProfiles.userId], references: [users.id] }),
 }));
 
 export const companiesRelations = relations(companies, ({ one, many }) => ({

@@ -1,6 +1,8 @@
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { clerkAppearance } from "@/features/auth/appearance";
 import { siteConfig } from "@/lib/constants";
 
 import "./globals.css";
@@ -76,7 +78,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           Skip to content
         </a>
-        {children}
+        <ClerkProvider appearance={clerkAppearance} afterSignOutUrl="/">
+          {children}
+        </ClerkProvider>
       </body>
     </html>
   );

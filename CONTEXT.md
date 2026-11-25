@@ -1,8 +1,8 @@
 # TrueApply — Session Context (Save Point)
 
 > Last updated: November 23, 2026
-> Phase: 0 — Foundation & Setup → COMPLETE
-> Next: Phase 1 — Authentication & User System
+> Phase: 1 — Authentication & User System → CODE COMPLETE, awaiting real Clerk + Neon keys for live test
+> Next: user adds keys → live smoke test → Phase 2 (jobs + ghost-job detection)
 
 ---
 
@@ -13,6 +13,31 @@
 - **Tagline:** "True jobs. True skills. True hiring."
 - **Deploy URL:** trueapply.vercel.app (not deployed yet)
 - **Cost:** $0 MVP (all free tiers)
+
+---
+
+## Phase 1 — Built 25 Nov 2026 (Clerk auth, onboarding, profiles, role dashboards)
+
+Verification: lint 0 · type-check 0 · build OK (12 routes, auth routes partial-prerendered) · `next start` smoke: signed-out hits to /dashboard, /onboarding, /seeker/*, /recruiter/* stream a redirect to /login?redirect_url=…
+
+### What exists
+- `@clerk/nextjs` 7.x, `zod` 4.x added. shadcn `label` + `textarea` added.
+- `src/proxy.ts` — plain `clerkMiddleware()` (Next 16 name). Clerk v7 deprecates `createRouteMatcher`, so protection lives in pages via `requireAccount()` / `requireRole()`.
+- `src/app/layout.tsx` — `<ClerkProvider>` inside `<body>`, monochrome appearance from `src/features/auth/appearance.ts`, `afterSignOutUrl="/"`.
+- Routes: `/login/[[...login]]` → `<SignIn/>`, `/register/[[...register]]` → `<SignUp unsafeMetadata={{role}}/>` (role from `?role=`), `/onboarding` (role picker + profile form), `/dashboard` (resolves role → redirect), `/seeker/dashboard`, `/recruiter/dashboard`. `loading.tsx` in each dynamic segment gives the Suspense boundary that `cacheComponents` needs.
+- `src/features/auth/`: `schemas.ts` (zod, discriminated union on role), `queries.ts` (`getCurrentUser` cached, `requireAccount`, `requireRole`, `dashboardPath`), `actions.ts` (`completeOnboarding` server action: validates, inserts user + seeker_profile or company in one `db.batch`, sets Clerk `publicMetadata.role`, redirects), `profile-completion.ts`, `components/` (onboarding-form, tag-input, choice-group, field, profile-completion).
+- DB: `users` gained `clerk_id` (unique); new `seeker_profiles` table (headline, bio, skills[], location, experience_level enum). `src/db/index.ts` is now lazy `getDb()` so builds pass without DATABASE_URL. First migration in `drizzle/0000_abnormal_nebula.sql`.
+- Company domain verification: `verified = true` when the sign-up email domain equals the entered company domain and is not a free-mail provider (`freeMailDomains` in constants).
+- CSP in `next.config.ts` decodes the Clerk Frontend API host from the publishable key and allows Clerk, Cloudflare Turnstile and `img.clerk.com`.
+- `.env` holds PLACEHOLDER Clerk keys (`pk_test_Y2xlcmsuZXhhbXBsZS5jb20k`) purely so the build runs. Replace before any real sign-in.
+
+### Not yet verified (needs real keys)
+- Actual sign-up → onboarding → dashboard flow in a browser, Clerk UI theming, DB inserts. Do this first next session.
+
+### To go live locally (user to do)
+1. Clerk dashboard → create app → copy publishable + secret key into `.env`.
+2. Neon → create project → `DATABASE_URL` into `.env` → `npm run db:migrate` (or `db:push`).
+3. `npm run dev`, sign up at /register?role=seeker, finish onboarding, confirm row in `users` + `seeker_profiles`.
 
 ---
 
@@ -66,14 +91,13 @@ src/
 
 ---
 
-## Phase 1 — Next Steps
-1. Pick auth: Clerk (roadmap default). `npm i @clerk/nextjs`, add `middleware.ts`, wrap layout with `ClerkProvider` (dark appearance, monochrome).
-2. Add Clerk + Neon domains to CSP in `next.config.ts`.
-3. Link Clerk user → `users` table (add `clerk_id` column, webhook or lazy upsert on first visit).
-4. Role picker at `/register?role=seeker|recruiter` (query param is already wired from landing CTAs).
-5. Seeker profile (skills tags, bio, location, experience level) and recruiter profile (company → `companies` table).
-6. Route protection: `(seeker)` and `(recruiter)` group layouts check role.
-7. Set up Neon project, `npm run db:push`, commit generated migration via `npm run db:generate`.
+## Phase 2 — Next Steps (after Phase 1 live test)
+1. Job posting form (recruiter): title, description, salary min/max (required), location/remote, skills, deadline → `jobs` table, status draft/open.
+2. Public job listing `/jobs` + `/jobs/[id]` with JSON-LD JobPosting, search + filters (role, location, salary, remote).
+3. Ghost Job Detection: deterministic signals (salary +20, verified domain +15, deadline ratio +10, prior hires +15, response rate +20) + Claude description-quality score (+20) → `reality_score`; badge Verified ≥80 / Likely real ≥55 / Suspicious.
+4. Job expiry cron (Vercel cron) → archive after deadline.
+5. Landing header: show "Dashboard" when signed in (wrap in Suspense, use Clerk `<Show>`).
+6. Settings page to edit profile/company (onboarding form reused in edit mode).
 
 ---
 
@@ -95,7 +119,7 @@ Next.js API routes + Server Actions instead of Turborepo + FastAPI. Deploys enti
 | Phase | What | Status |
 |---|---|---|
 | 0 | Foundation & Setup | DONE 23 Nov 2026 |
-| 1 | Auth & User System (Clerk) | Next |
+| 1 | Auth & User System (Clerk) | CODE DONE 25 Nov 2026, live test pending keys |
 | 2 | Job Posting + Ghost Job Detection AI | Not started |
 | 3 | Skill Verification System | Not started |
 | 4 | Application Pipeline & Transparency | Not started |

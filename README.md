@@ -8,16 +8,20 @@ TrueApply is a hiring platform that puts a trust layer between job seekers and r
 
 - Next.js 16 (App Router, Server Components, Server Actions)
 - TypeScript 5, Tailwind CSS v4, shadcn/ui (Radix), Motion
+- Clerk for authentication, Zod for validation
 - Drizzle ORM on Neon Postgres
 - Deployed on Vercel
 
 ## Getting started
 
 ```bash
-cp .env.example .env     # fill in DATABASE_URL
+cp .env.example .env
 npm install
+npm run db:migrate       # applies drizzle/ migrations to DATABASE_URL
 npm run dev
 ```
+
+Fill `.env` with a Neon `DATABASE_URL` and the publishable + secret key from a Clerk application. Sign-in and sign-up live at `/login` and `/register`; new accounts finish setup at `/onboarding`.
 
 Open http://localhost:3000.
 
@@ -41,6 +45,8 @@ Open http://localhost:3000.
 src/
 ├── app/           routes, layouts, metadata (robots, sitemap)
 │   ├── (auth)/        /login, /register
+│   ├── onboarding/    role + profile setup after sign-up
+│   ├── dashboard/     routes a signed-in user to their role's dashboard
 │   ├── (seeker)/      /seeker/*
 │   └── (recruiter)/   /recruiter/*
 ├── components/

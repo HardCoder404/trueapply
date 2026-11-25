@@ -1,10 +1,8 @@
-import type { applications, companies, jobs } from "@/db/schema";
+import type { applications, jobs } from "@/db/schema";
+import type { Company } from "@/features/auth/types";
 
 export type Job = typeof jobs.$inferSelect;
 export type NewJob = typeof jobs.$inferInsert;
-
-export type Company = typeof companies.$inferSelect;
-export type NewCompany = typeof companies.$inferInsert;
 
 export type Application = typeof applications.$inferSelect;
 export type NewApplication = typeof applications.$inferInsert;
