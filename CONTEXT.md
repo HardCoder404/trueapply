@@ -1,8 +1,8 @@
 # TrueApply — Session Context (Save Point)
 
 > Last updated: November 23, 2026
-> Phase: 1 — Authentication & User System → CODE COMPLETE, awaiting real Clerk + Neon keys for live test
-> Next: user adds keys → live smoke test → Phase 2 (jobs + ghost-job detection)
+> Phase: 1 — Authentication & User System → DONE & LIVE-TESTED 25 Nov 2026
+> Next: Phase 2 (job posting + public board + ghost-job detection)
 
 ---
 
@@ -31,13 +31,13 @@ Verification: lint 0 · type-check 0 · build OK (12 routes, auth routes partial
 - CSP in `next.config.ts` decodes the Clerk Frontend API host from the publishable key and allows Clerk, Cloudflare Turnstile and `img.clerk.com`.
 - `.env` holds PLACEHOLDER Clerk keys (`pk_test_Y2xlcmsuZXhhbXBsZS5jb20k`) purely so the build runs. Replace before any real sign-in.
 
-### Not yet verified (needs real keys)
-- Actual sign-up → onboarding → dashboard flow in a browser, Clerk UI theming, DB inserts. Do this first next session.
-
-### To go live locally (user to do)
-1. Clerk dashboard → create app → copy publishable + secret key into `.env`.
-2. Neon → create project → `DATABASE_URL` into `.env` → `npm run db:migrate` (or `db:push`).
-3. `npm run dev`, sign up at /register?role=seeker, finish onboarding, confirm row in `users` + `seeker_profiles`.
+### Live test (25 Nov 2026, real Clerk dev instance + Neon)
+- `.env` now holds real Clerk dev keys and the Neon pooled URL. Migration `0000` applied to Neon.
+- Headless Playwright walked both roles: /login → password → new-device code → /onboarding (role preselected from unsafeMetadata) → form → role dashboard. Redirect checks: /dashboard, the other role's dashboard and /onboarding all land on the user's own dashboard. DB rows verified (seeker skills/level/location; company verified=true for matching domain).
+- Clerk's **bot sign-up protection blocks headless browsers** at `/register/protect-check`. Never try to bypass it. For automated tests create users via `node --env-file=.env scripts/create-test-user.mjs <email> <password> <role>` and sign in at /login instead. Clerk test emails (`+clerk_test@`) accept code `424242` for the new-device step.
+- Test accounts (password is a comment at the bottom of `.env`): `seeker+clerk_test@example.com`, `hr+clerk_test@northwindlabs.com`.
+- Playwright lives at `/opt/homebrew/opt/python@3.14/bin/python3.14`; use `wait_until="domcontentloaded"` (dev server never reaches networkidle).
+- Clerk appearance: avatar forced grayscale so the default purple avatar does not break the monochrome theme.
 
 ---
 

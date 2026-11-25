@@ -27,5 +27,7 @@ export const clerkAppearance = {
     formButtonPrimary: "shadow-none",
     socialButtonsBlockButton: "border-border",
     formFieldInput: "shadow-none",
+    userButtonAvatarBox: "grayscale",
+    avatarBox: "grayscale",
   },
 } as const;
