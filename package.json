@@ -15,7 +15,9 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "verify": "npm run lint && npm run type-check && npm run build"
+    "verify": "npm run lint && npm run type-check && npm run build",
+    "prebuild": "node scripts/fetch-model.mjs",
+    "fetch-model": "node scripts/fetch-model.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.10.9",

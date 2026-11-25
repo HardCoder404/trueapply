@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# embedding model cache (warmed by scripts/fetch-model.mjs)
+.models/

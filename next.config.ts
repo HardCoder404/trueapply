@@ -49,10 +49,20 @@ const privateRouteHeaders = [
   { key: "X-Robots-Tag", value: "noindex, nofollow" },
 ];
 
-const privateRoutes = ["/dashboard", "/onboarding", "/seeker/:path*", "/recruiter/:path*"];
+const privateRoutes = [
+  "/dashboard",
+  "/onboarding",
+  "/seeker/:path*",
+  "/recruiter/:path*",
+];
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@huggingface/transformers"],
+  // onnxruntime-node picks its native binary at runtime, which file tracing
+  // cannot see; ship the Linux x64 one plus the warmed model files to Vercel.
+  outputFileTracingIncludes: {
+    "/**": [".models/**", "node_modules/onnxruntime-node/bin/napi-v6/linux/x64/**"],
+  },
   reactStrictMode: true,
   poweredByHeader: false,
   cacheComponents: true,

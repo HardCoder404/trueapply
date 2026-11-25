@@ -1,13 +1,13 @@
 import "server-only";
 
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { env, pipeline, type FeatureExtractionPipeline } from "@huggingface/transformers";
 
-// Keep model files out of the project tree: the dev watcher reloads on writes under
-// node_modules, and Vercel's bundle is read-only. Override with TRANSFORMERS_CACHE_DIR.
-env.cacheDir = process.env.TRANSFORMERS_CACHE_DIR ?? join(tmpdir(), "trueapply-models");
+// Model files live in ./.models (git-ignored). `npm run build` warms it via
+// scripts/fetch-model.mjs and next.config.ts ships it with the server bundle,
+// so a cold start never downloads from the Hub. Override with TRANSFORMERS_CACHE_DIR.
+env.cacheDir = process.env.TRANSFORMERS_CACHE_DIR ?? join(process.cwd(), ".models");
 
 const modelId = "Xenova/bge-small-en-v1.5";
 export const embeddingDimensions = 384;
