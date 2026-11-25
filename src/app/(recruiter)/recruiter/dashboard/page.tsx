@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+
+import { DashboardSkeleton } from "@/components/layout/dashboard-skeleton";
 
 import { Badge } from "@/components/ui/badge";
 import { ProfileCompletion } from "@/features/auth/components/profile-completion";
@@ -28,7 +31,7 @@ const upcoming = [
   },
 ];
 
-export default async function RecruiterDashboardPage() {
+async function RecruiterDashboard() {
   const account = await requireRole("recruiter");
   const company = account.company;
   const completion = recruiterCompletion(company);
@@ -122,5 +125,13 @@ export default async function RecruiterDashboardPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function RecruiterDashboardPage() {
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <RecruiterDashboard />
+    </Suspense>
   );
 }

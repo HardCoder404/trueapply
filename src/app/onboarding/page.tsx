@@ -1,6 +1,7 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
 import { Wordmark } from "@/components/layout/wordmark";
 import { OnboardingForm } from "@/features/auth/components/onboarding-form";
@@ -16,7 +17,7 @@ function roleFromMetadata(value: unknown): UserRole | null {
   return userRoles.find((role) => role === value) ?? null;
 }
 
-export default async function OnboardingPage() {
+async function OnboardingFormForUser() {
   const { isAuthenticated, redirectToSignIn } = await auth();
   if (!isAuthenticated) return redirectToSignIn();
 
@@ -29,6 +30,28 @@ export default async function OnboardingPage() {
     .filter(Boolean)
     .join(" ");
 
+  return (
+    <OnboardingForm
+      defaultName={defaultName}
+      defaultRole={roleFromMetadata(clerkUser?.unsafeMetadata.role)}
+      emailDomain={email?.split("@")[1]?.toLowerCase() ?? null}
+    />
+  );
+}
+
+function FormSkeleton() {
+  return (
+    <div aria-hidden className="space-y-3 motion-safe:animate-pulse">
+      <div className="h-4 w-40 rounded bg-muted" />
+      <div className="grid grid-cols-2 gap-2">
+        <div className="h-14 rounded-lg bg-muted" />
+        <div className="h-14 rounded-lg bg-muted" />
+      </div>
+    </div>
+  );
+}
+
+export default function OnboardingPage() {
   return (
     <main id="main" className="flex flex-1 flex-col">
       <div className="mx-auto flex w-full max-w-6xl items-center px-5 py-3 sm:px-8">
@@ -47,11 +70,9 @@ export default async function OnboardingPage() {
         </p>
 
         <div className="mt-10">
-          <OnboardingForm
-            defaultName={defaultName}
-            defaultRole={roleFromMetadata(clerkUser?.unsafeMetadata.role)}
-            emailDomain={email?.split("@")[1]?.toLowerCase() ?? null}
-          />
+          <Suspense fallback={<FormSkeleton />}>
+            <OnboardingFormForUser />
+          </Suspense>
         </div>
       </section>
     </main>

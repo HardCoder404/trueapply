@@ -38,6 +38,7 @@ Verification: lint 0 · type-check 0 · build OK (12 routes, auth routes partial
 - Test accounts (password is a comment at the bottom of `.env`): `seeker+clerk_test@example.com`, `hr+clerk_test@northwindlabs.com`.
 - Playwright lives at `/opt/homebrew/opt/python@3.14/bin/python3.14`; use `wait_until="domcontentloaded"` (dev server never reaches networkidle).
 - Clerk appearance: avatar forced grayscale so the default purple avatar does not break the monochrome theme.
+- Next 16 instant-navigation rule: data reads (auth(), DB) must sit under a `<Suspense>` scoped inside the page, with a real shell outside it. `loading.tsx` does NOT satisfy it, so all loading files were removed. Pattern used: sync `Page` renders static heading + `<Suspense fallback={<DashboardSkeleton/>}>` around an async component that calls `requireRole()`. Redirect-only `/dashboard` exports `instant = false`.
 - `<html suppressHydrationWarning>`: a browser extension (Kantu/UI.Vision) injects `data-kantu` on <html> and caused a hydration console error. Not our bug.
 
 ### Security posture after Phase 1 (keep extending each phase)
