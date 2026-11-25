@@ -11,6 +11,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  vector,
 } from "drizzle-orm/pg-core";
 
 import {
@@ -267,6 +268,72 @@ export const applicationEvents = pgTable(
   },
   (table) => [index("application_events_application_id_idx").on(table.applicationId)],
 );
+
+export const coachRoleEnum = pgEnum("coach_role", ["user", "assistant"]);
+
+export const jobEmbeddings = pgTable(
+  "job_embeddings",
+  {
+    jobId: uuid("job_id")
+      .primaryKey()
+      .references(() => jobs.id, { onDelete: "cascade" }),
+    content: text("content").notNull(),
+    embedding: vector("embedding", { dimensions: 384 }).notNull(),
+    updatedAt: timestamps.updatedAt,
+  },
+  (table) => [
+    index("job_embeddings_embedding_idx").using(
+      "hnsw",
+      table.embedding.op("vector_cosine_ops"),
+    ),
+  ],
+);
+
+export type CoachSource = { slug: string; title: string; company: string };
+
+export const coachConversations = pgTable(
+  "coach_conversations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    title: text("title").notNull(),
+    ...timestamps,
+  },
+  (table) => [index("coach_conversations_user_id_idx").on(table.userId)],
+);
+
+export const coachMessages = pgTable(
+  "coach_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    conversationId: uuid("conversation_id")
+      .references(() => coachConversations.id, { onDelete: "cascade" })
+      .notNull(),
+    role: coachRoleEnum("role").notNull(),
+    content: text("content").notNull(),
+    sources: jsonb("sources").$type<CoachSource[]>(),
+    toolsUsed: jsonb("tools_used").$type<string[]>(),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [index("coach_messages_conversation_id_idx").on(table.conversationId)],
+);
+
+export const coachConversationsRelations = relations(
+  coachConversations,
+  ({ one, many }) => ({
+    user: one(users, { fields: [coachConversations.userId], references: [users.id] }),
+    messages: many(coachMessages),
+  }),
+);
+
+export const coachMessagesRelations = relations(coachMessages, ({ one }) => ({
+  conversation: one(coachConversations, {
+    fields: [coachMessages.conversationId],
+    references: [coachConversations.id],
+  }),
+}));
 
 export const usersRelations = relations(users, ({ one, many }) => ({
   seekerProfile: one(seekerProfiles, {

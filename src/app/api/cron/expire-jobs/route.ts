@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 
 import { getDb } from "@/db";
 import { jobs } from "@/db/schema";
+import { removeJobIndex } from "@/features/coach/index-jobs";
 
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -14,9 +15,10 @@ export async function GET(request: Request) {
     .update(jobs)
     .set({ status: "archived" })
     .where(and(eq(jobs.status, "open"), lt(jobs.deadline, new Date())))
-    .returning({ slug: jobs.slug });
+    .returning({ id: jobs.id, slug: jobs.slug });
 
   if (archived.length) {
+    await removeJobIndex(archived.map((job) => job.id));
     revalidatePath("/jobs");
     revalidatePath("/sitemap.xml");
     for (const job of archived) revalidatePath(`/jobs/${job.slug}`);

@@ -11,6 +11,7 @@ TrueApply is a hiring platform that puts a trust layer between job seekers and r
 - Clerk for authentication, Zod for validation
 - Groq (gpt-oss) for the ghost-job description check, challenge generation and grading
 - Resend for application emails, Server-Sent Events for live status
+- pgvector on Neon with a local bge-small embedding model for the career coach's retrieval
 - Drizzle ORM on Neon Postgres
 - Deployed on Vercel
 
@@ -54,6 +55,7 @@ src/
 │   ├── u/             public skill portfolios
 │   ├── api/cron/      scheduled jobs (expiry, recruiter nudges)
 │   ├── api/applications/stream   live status updates (SSE)
+│   ├── api/coach/     career coach agent (streams NDJSON)
 │   ├── (seeker)/      /seeker/*
 │   └── (recruiter)/   /recruiter/*
 ├── components/

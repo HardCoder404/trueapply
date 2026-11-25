@@ -22,9 +22,9 @@ export const metadata: Metadata = {
 
 const upcoming = [
   {
-    phase: "05",
-    title: "Career coach",
-    body: "Data-backed answers on what to learn next, from real postings on the platform.",
+    phase: "08",
+    title: "Launch polish",
+    body: "Accessibility pass, performance budget and the public launch.",
   },
   {
     phase: "06",
@@ -64,6 +64,9 @@ async function SeekerDashboard() {
         <div className="mt-6 flex flex-wrap gap-3">
           <Button asChild className="h-11 px-5 text-sm">
             <Link href="/jobs">Browse open roles</Link>
+          </Button>
+          <Button asChild variant="outline" className="h-11 px-5 text-sm">
+            <Link href="/seeker/coach">Ask the coach</Link>
           </Button>
           {account.handle && (
             <Button asChild variant="outline" className="h-11 px-5 text-sm">

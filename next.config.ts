@@ -52,6 +52,7 @@ const privateRouteHeaders = [
 const privateRoutes = ["/dashboard", "/onboarding", "/seeker/:path*", "/recruiter/:path*"];
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["@huggingface/transformers"],
   reactStrictMode: true,
   poweredByHeader: false,
   cacheComponents: true,

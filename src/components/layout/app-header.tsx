@@ -19,13 +19,16 @@ export function AppHeader({ area, links = [] }: AppHeaderProps) {
             {area}
           </span>
         </div>
-        <div className="flex items-center gap-4 sm:gap-5">
-          <nav aria-label="Workspace" className="flex items-center gap-4 sm:gap-5">
+        <div className="flex min-w-0 items-center gap-3 sm:gap-5">
+          <nav
+            aria-label="Workspace"
+            className="flex min-w-0 [scrollbar-width:none] items-center gap-4 overflow-x-auto sm:gap-5 [&::-webkit-scrollbar]:hidden"
+          >
             {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="flex h-11 items-center text-sm text-muted-foreground transition-colors hover:text-foreground"
+                className="flex h-11 shrink-0 items-center text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 {link.label}
               </Link>

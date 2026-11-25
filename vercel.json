@@ -1,6 +1,7 @@
 {
   "crons": [
     { "path": "/api/cron/expire-jobs", "schedule": "0 3 * * *" },
-    { "path": "/api/cron/nudge-recruiters", "schedule": "0 4 * * *" }
+    { "path": "/api/cron/nudge-recruiters", "schedule": "0 4 * * *" },
+    { "path": "/api/cron/reindex-jobs", "schedule": "0 5 * * 1" }
   ]
 }

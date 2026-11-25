@@ -1,8 +1,8 @@
 # TrueApply — Session Context (Save Point)
 
 > Last updated: November 25, 2026
-> Phase: 4 — Application Pipeline & Transparency → DONE & LIVE-TESTED 25 Nov 2026
-> Next: Phase 5 — AI Career Coach + RAG pipeline
+> Phase: 5 — AI Career Coach + RAG → DONE & LIVE-TESTED 25 Nov 2026
+> Next: Phase 6 — Reverse Hiring & Matching Engine
 
 ---
 
@@ -13,6 +13,31 @@
 - **Tagline:** "True jobs. True skills. True hiring."
 - **Deploy URL:** trueapply.vercel.app (not deployed yet)
 - **Cost:** $0 MVP (all free tiers)
+
+---
+
+## Phase 5 — Built 25 Nov 2026 (career coach, RAG over live postings)
+
+Verification: lint 0 · type-check 0 · build OK · live: three questions in one thread (readiness → 23% for Senior Frontend from 3 matching roles with verified/claimed/missing split; pay by skill as a table; free resources), source chips link to the cited roles, thread persisted and listed in the sidebar, 30/40 daily budget shown, no overflow at 375. Publishing a role indexed it automatically; weekly reindex cron 401/200.
+
+### Decisions (differ from ROADMAP's suggestions)
+- **Vector store: pgvector on Neon** (extension `vector` 0.8.7, HNSW cosine index) instead of Pinecone — no extra account, joins directly with `jobs`.
+- **Embeddings: local `Xenova/bge-small-en-v1.5` (384-d, q8) via `@huggingface/transformers`** instead of OpenAI/Cohere — Groq has no embeddings API and the user has no OpenAI/Cohere key. Model files cache in `os.tmpdir()/trueapply-models` (override `TRANSFORMERS_CACHE_DIR`); ~34 MB download on first cold start. `next.config.ts` has `serverExternalPackages: ["@huggingface/transformers"]`.
+- **LLM: Groq gpt-oss-120b with OpenAI-style tool calling** (streaming SSE parsed by hand in `agent.ts`), not Claude.
+
+### What exists
+- Schema (migration `0005`): `job_embeddings` (jobId PK, content, vector(384)), `coach_conversations`, `coach_messages` (role enum, content, sources jsonb, tools_used jsonb).
+- `src/lib/ai/embeddings.ts` — singleton pipeline, `embed()`/`embedOne()`.
+- `src/features/coach/`: `index-jobs.ts` (`jobDocument` = title/company/industry/location/salary/skills/description, `indexJobs`, `indexJobById`, `removeJobIndex`, `reindexOpenJobs`), `tools.ts` (4 tools: `search_jobs` [pgvector cosine + filters], `get_skill_trends` [SQL unnest: openings, share, median/top salary in lakhs, locations], `compare_skills` [top-10 similar postings ≥0.45 → demand-weighted readiness: verified = score/100, claimed = 0.4, missing = 0], `get_learning_resources` [curated map in `resources.ts`, 30+ skills, fallback]), `agent.ts` (persona + user profile context in system prompt, ≤5 tool rounds, streams tokens, collects sources), `queries.ts` (40 msgs/day limit), `actions.ts` (delete), components (`chat.tsx` client NDJSON reader, `message-body.tsx` safe markdown-lite incl. tables/links/bold/lists, `coach-context.tsx` client store for the sidebar, `conversation-list.tsx`, `coach-shell.tsx`).
+- Routes: `/seeker/coach` (new thread), `/seeker/coach/[id]`, `POST /api/coach` (NDJSON events: token/tool/sources/done/error; creates the thread on first message), `GET /api/cron/reindex-jobs` (weekly Mon 05:00 in vercel.json).
+- Hooks: publish/rescore → `indexJobById`; close/archive/expire → `removeJobIndex`. Seeker nav has Coach; dashboard has "Ask the coach".
+- Gotchas: (1) `router.replace()`/`router.refresh()` fired from the chat after streaming left `/seeker/coach/[id]` stuck on its Suspense skeleton (link navigation and full loads are fine) → the chat never calls the router; URL is swapped with `history.replaceState` and the sidebar updates through the client store. (2) Dev server once entered a "[Fast Refresh] rebuilding" loop (every page reloading) → restart `next dev`; model cache was moved out of node_modules as a precaution. (3) Playwright: hidden phone copy of the sidebar comes first in DOM, scope to `aside div.lg\:block`.
+
+### Phase 6 — Next Steps
+1. Anonymous candidate profiles for recruiters: `/recruiter/discover` lists seekers with verified scores (no name/handle until they accept), filters by skill/score/level/location.
+2. Matching: embed seeker profiles (headline + skills + verified scores) into a `seeker_embeddings` table; "best matches" for a job = cosine over skills + score weighting; "roles for you" on the seeker dashboard.
+3. Interview invites: `invites` table (recruiter → seeker, job, message); seeker accepts → application created at `shortlisted`; email both sides.
+4. Seeker privacy toggle in settings (discoverable yes/no).
 
 ---
 
@@ -199,7 +224,7 @@ Next.js API routes + Server Actions instead of Turborepo + FastAPI. Deploys enti
 | 2 | Job Posting + Ghost Job Detection AI | DONE 25 Nov 2026 (Groq) |
 | 3 | Skill Verification System | DONE 25 Nov 2026 (Groq, browser JS runner) |
 | 4 | Application Pipeline & Transparency | DONE 25 Nov 2026 (SSE + Resend) |
-| 5 | AI Career Coach + RAG Pipeline | Not started |
+| 5 | AI Career Coach + RAG Pipeline | DONE 25 Nov 2026 (pgvector + local embeddings + Groq tools) |
 | 6 | Reverse Hiring & Matching Engine | Not started |
 | 7 | Analytics & Polish | Not started |
 | 8 | Testing & Deployment | Not started |

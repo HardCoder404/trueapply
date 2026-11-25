@@ -11,6 +11,7 @@ import { jobs } from "@/db/schema";
 import { getCurrentUser } from "@/features/auth/queries";
 import { createChallengesForJob } from "@/features/challenges/actions";
 import { listJobChallenges } from "@/features/challenges/queries";
+import { indexJobById, removeJobIndex } from "@/features/coach/index-jobs";
 import { GroqUnavailableError } from "@/lib/ai/groq";
 import { lakhsToInr, slugify } from "@/lib/format";
 
@@ -49,6 +50,15 @@ async function ensureChallenges(job: {
   } catch (error) {
     if (!(error instanceof GroqUnavailableError || error instanceof SyntaxError))
       throw error;
+  }
+}
+
+async function syncIndex(jobId: string, open: boolean) {
+  try {
+    if (open) await indexJobById(jobId);
+    else await removeJobIndex([jobId]);
+  } catch (error) {
+    console.error("Job index sync failed", error);
   }
 }
 
@@ -131,6 +141,7 @@ export async function saveJob(
   }
 
   if (publish) await ensureChallenges({ id, ...draft });
+  await syncIndex(id, values.status === "open");
 
   revalidateJobPaths(values.slug);
   redirect(`/recruiter/jobs/${id}`);
@@ -153,6 +164,7 @@ export async function publishJob(formData: FormData) {
     .where(eq(jobs.id, job.id));
 
   await ensureChallenges(job);
+  await syncIndex(job.id, true);
 
   revalidateJobPaths(job.slug);
   redirect(`/recruiter/jobs/${job.id}`);
@@ -164,6 +176,7 @@ export async function closeJob(formData: FormData) {
   if (!company || !job || job.status !== "open") return;
 
   await getDb().update(jobs).set({ status: "closed" }).where(eq(jobs.id, job.id));
+  await syncIndex(job.id, false);
 
   revalidateJobPaths(job.slug);
   redirect(`/recruiter/jobs/${job.id}`);
